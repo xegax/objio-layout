@@ -7,7 +7,7 @@
   "scripts": {
     "prepare": "npm run clean && tsc -p tsconfig.publish.json -outDir . && npm run copy",
     "postpublish": "npm run clean",
-    "copy": "copyfiles -u 1 src/view/**/*.scss .", 
+    "copy": "shx cp src/view/**/*.scss view", 
     "dist": "tsc",
     "dev": "npm run prepare",
     "clean": "npm run clean-src && npm run clean-dirs",
