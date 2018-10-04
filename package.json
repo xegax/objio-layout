@@ -1,6 +1,6 @@
 {
   "name": "objio-layout",
-  "version": "0.0.13",
+  "version": "0.0.34",
   "description": "",
   "main": "index.js",
   "repository": "git@github.com:xegax/objio-layout.git",
@@ -19,7 +19,7 @@
   "devDependencies": {
   },
   "dependencies": {
-    "objio": "^0.0.32",
-    "objio-object": "^0.0.12"
+    "objio": "^0.0.34",
+    "objio-object": "^0.0.34"
   }
 }
