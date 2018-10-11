@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { DataSourceHolder } from '../server/layout';
 import './layout-cont-view.scss';
+import { Header } from 'ts-react-ui/layout';
+import { DocLayout } from '../client/layout';
 
 const classes = {
   cont: 'layout-cont',
@@ -12,11 +14,12 @@ const classes = {
 export interface Owner {
   onRemove?();
   onEdit?();
-  setName?(name: string);
   isEdit?(): boolean;
+  setName?(name: string): void;
 }
 
 export interface Props {
+  layoutId: string;
   model: DataSourceHolder;
   owner?: Owner;
 }
@@ -35,16 +38,20 @@ export class LayoutContView extends React.Component<Props> {
   }
 
   renderTitle(): JSX.Element {
-    const model = this.props.model;
-    const owner = this.props.owner;
+    const { model, owner } = this.props;
     let title: JSX.Element;
-    if (owner && owner.isEdit && owner.isEdit()) {
+    if (owner.isEdit()) {
       title = (
         <input
+          autoFocus
           defaultValue={model.getName()}
           onKeyDown={evt => {
-            if (evt.keyCode == 13)
-              owner.setName(evt.currentTarget.value);
+            if (evt.keyCode == 13) {
+              owner.setName && owner.setName(evt.currentTarget.value);
+            }
+          }}
+          onBlur={evt => {
+            owner.setName && owner.setName(evt.currentTarget.value);
           }}
         />
       );
@@ -52,7 +59,7 @@ export class LayoutContView extends React.Component<Props> {
       title = (
         <div className={classes.titleWrap}
           onDoubleClick={() => {
-            owner.onEdit();
+            owner.onEdit && owner.onEdit();
           }}
         >
           {model.getName()}
@@ -69,11 +76,19 @@ export class LayoutContView extends React.Component<Props> {
 
   render() {
     const obj = this.props.model;
+    const docLayout = obj.getLayout() as DocLayout;
     const owner = this.props.owner;
     return (
       <div className={classes.cont}>
         <div className={classes.header}>
-          {this.renderTitle()}
+          <Header
+            enabled={!owner.isEdit()}
+            key={this.props.layoutId}
+            data={{id: this.props.layoutId}}
+            layout={docLayout.getLayout()}
+          >
+            {this.renderTitle()}
+          </Header>
           <div style={{flexGrow: 0}}>
             <i
               onClick={() => {

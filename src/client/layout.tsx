@@ -88,6 +88,23 @@ export class DocLayout extends Base {
       ));
 
       const owner = {
+        isEdit: () => this.edit == obj,
+        onEdit: () => {
+          this.edit && this.edit.holder.delayedNotify();
+          this.edit = obj;
+          this.edit.holder.delayedNotify();
+        },
+        setName: (name: string) => {
+          if (!this.edit)
+            return;
+
+          const edit = this.edit;
+          this.edit = null;
+
+          edit.setName(name);
+          edit.holder.save();
+          edit.holder.delayedNotify();
+        },
         onRemove: () => {
           this.model.remove(id);
           this.layout = clone( this.model.getLayout() ) as LayoutCont;
@@ -95,22 +112,10 @@ export class DocLayout extends Base {
           const idx = this.objects.find(obj => obj.holder.getID() == id);
           this.objects.remove(idx);
           this.objects.holder.save();
-        },
-        onEdit: () => {
-          this.edit = obj;
-          obj.holder.delayedNotify();
-        },
-        setName: (name: string) => {
-          obj.setName(name);
-          this.edit = null;
-          obj.holder.delayedNotify();
-        },
-        isEdit: () => {
-          return this.edit == obj;
         }
       };
       map[id] = (
-        <LayoutContView model={obj} owner={owner}>
+        <LayoutContView layoutId={id} model={obj} owner={owner}>
           {jsx}
         </LayoutContView>
       );

@@ -20,16 +20,21 @@ export interface Props {
 }
 
 export class DocLayoutView extends React.Component<Props, {}> {
+  private mount: boolean = false;
+
   subscriber = () => {
-    this.setState({});
+    if (this.mount)
+      this.setState({});
   }
 
   componentDidMount() {
+    this.mount = true;
     this.props.model.updateLayoutMap();
     this.props.model.holder.subscribe(this.subscriber);
   }
 
   componentWillUnmount() {
+    this.mount = false;
     this.props.model.holder.unsubscribe(this.subscriber);
   }
 

@@ -1,4 +1,4 @@
-import { LayoutCont } from 'ts-react-ui/model/layout';
+import { LayoutCont, LayoutModel } from 'ts-react-ui/model/layout';
 import { OBJIOItem, OBJIOArray, SERIALIZER } from 'objio';
 import { ViewFactory, FactoryItem } from '../client/view-factory';
 import { ObjectBase } from 'objio-object/server/object-base';
@@ -99,6 +99,10 @@ export class DataSourceHolder<
     this.name = name;
     this.holder.save();
     this.holder.delayedNotify();
+  }
+
+  getLayout(): TLayout {
+    return this.layout;
   }
 
   static TYPE_ID = 'DataSourceHolder';
