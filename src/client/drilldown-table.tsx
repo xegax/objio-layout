@@ -7,7 +7,7 @@ import { RenderArgs, ListColumn } from 'ts-react-ui/model/list';
 import { Cancelable, ExtPromise } from 'objio';
 import { DocLayout } from './layout';
 import { DataSourceHolderArgs } from '../server/layout';
-// import { ContextMenu, Menu, MenuItem } from '@blueprintjs/core';
+import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
 import { CondHolder, EventType, CondHolderOwner } from './cond-holder';
 import { SelectProv, SelectProvOwner, EventTypes } from './common';
 
@@ -164,7 +164,6 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
   }
 
   onCtxMenu = (evt: React.MouseEvent, col: ListColumn) => {
-    /*
     evt.preventDefault();
     evt.stopPropagation();
 
@@ -174,7 +173,6 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
         <MenuItem text='show all' onClick={() => this.showAllColumns()}/>
       </Menu>
     ), {left: evt.pageX, top: evt.pageY});
-    */
   }
 
   hideColumn(col: string) {

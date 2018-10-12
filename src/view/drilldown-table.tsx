@@ -16,8 +16,6 @@ export interface Props {
 }
 
 export class DrillDownTableView extends React.Component<Props> {
-  private ref = React.createRef<HTMLInputElement>();
-
   subscriber = () => {
     this.setState({});
   }
