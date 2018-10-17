@@ -16,6 +16,8 @@ export interface Props {
 }
 
 export class DrillDownTableView extends React.Component<Props> {
+  private search = React.createRef<HTMLInputElement>();
+
   subscriber = () => {
     this.setState({});
   }
@@ -63,6 +65,45 @@ export class DrillDownTableView extends React.Component<Props> {
     );
   }
 
+  renderSearch(): JSX.Element {
+    const model = this.props.model;
+    const value = model.getSearchColumn();
+    return (
+      <div style={{display: 'flex'}}>
+        <button
+          onClick={() => {
+            model.setSearchText(this.search.current.value);
+          }}
+        >
+          <i
+            className='fa fa-search'
+            style={{flexGrow: 0}}
+          />
+        </button>
+        <input
+          ref={this.search}
+          defaultValue={model.getSearchText()}
+          style={{flexGrow: 1}}
+          onKeyDown={e => {
+            if (e.keyCode == 13)
+              model.setSearchText(e.currentTarget.value);
+          }}
+        /> 
+        <select
+          style={{flexGrow: 0}}
+          value={value}
+          onChange={e => {
+            model.setSearchColumn(e.currentTarget.value);
+          }}
+        >
+          {model.getColumns().map((col, i) => {
+            return <option key={i} value={col.name}>{col.name}</option>;
+          })}
+        </select>
+      </div>
+    );
+  }
+
   renderData(): JSX.Element {
     const model = this.props.model;
     const state = model.get();
@@ -74,6 +115,7 @@ export class DrillDownTableView extends React.Component<Props> {
       <React.Fragment>
         {this.renderTableName()}
         {this.renderIdColumnSelect()}
+        {this.renderSearch()}
         <FitToParent wrapToFlex>
           <List border model={model.getRender()}/>
         </FitToParent>

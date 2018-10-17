@@ -9,6 +9,7 @@ export class DrillDownTable<
 
   protected idColumn: string;
   protected colsToShow = Array<string>();
+  protected searchColumn: string;
 
   getIdColumn(): string {
     return this.idColumn;
@@ -24,10 +25,20 @@ export class DrillDownTable<
     return true;
   }
 
+  getSearchColumn(): string {
+    return this.searchColumn;
+  }
+
+  setSearchColumn(col: string): void {
+    this.searchColumn = col;
+    this.holder.save();
+  }
+
   static TYPE_ID = 'DrillDownTable';
   static SERIALIZE: SERIALIZER = () => ({
     ...DataSourceHolder.SERIALIZE(),
     idColumn:     { type: 'string' },
-    colsToShow:   { type: 'json' }
+    colsToShow:   { type: 'json' },
+    searchColumn: { type: 'string' }
   });
 }

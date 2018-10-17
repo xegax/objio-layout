@@ -1,7 +1,14 @@
 import * as React from 'react';
 import { DrillDownTable as Base } from '../server/drilldown-table';
 import { DocTable } from 'objio-object/client/doc-table';
-import { ColumnAttr, LoadCellsArgs, SubtableAttrs, SortPair } from 'objio-object/client/table';
+import {
+  ColumnAttr,
+  LoadCellsArgs,
+  SubtableAttrs,
+  SortPair,
+  Condition,
+  ValueCond
+} from 'objio-object/client/table';
 import { RenderListModel } from 'ts-react-ui/list';
 import { RenderArgs, ListColumn } from 'ts-react-ui/model/list';
 import { Cancelable, ExtPromise } from 'objio';
@@ -21,6 +28,7 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
   private rowsNum: number = 0;
   private sort: SortPair;
   private cond = new CondHolder();
+  private searchText: string;
 
   constructor(args: DataSourceHolderArgs<DocTable, DocLayout>) {
     super(args);
@@ -79,9 +87,26 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
     return this.cond;
   }
 
+  getSearchText() {
+    return this.searchText;
+  }
+
+  setSearchText(text: string) {
+    this.searchText = text;
+    this.requestTable();
+  }
+
   requestTable = () => {
     const args: Partial<SubtableAttrs> = {};
-    const filter = this.cond.getMergedCondition(this, this.layout.getObjects().getArray());
+    let filter: Condition = this.cond.getMergedCondition(this, this.layout.getObjects().getArray());
+    if (!filter && this.searchText) {
+      filter = {
+        column: this.searchColumn || this.getColumns()[0],
+        value: this.searchText,
+        like: true
+      } as ValueCond;
+    }
+    
     if (filter)
       args.filter = filter;
 

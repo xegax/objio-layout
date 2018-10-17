@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DocLayout as Base, DataSourceHolder } from '../server/layout';
-import { LayoutModel, clone, LayoutCont } from 'ts-react-ui/model/layout';
+import { LayoutModel, clone, LayoutCont, LayoutItem } from 'ts-react-ui/model/layout';
 import { OBJIOItem } from 'objio';
 import { LayoutContView } from '../view/layout-cont-view';
 import { ObjectBase } from 'objio-object/client/object-base';
@@ -32,7 +32,18 @@ export class DocLayout extends Base {
     });
 
     this.model.subscribe(() => {
-      this.holder.getObject(this.model.getLastDrop().id)
+      this.layout = clone(this.model.getLayout()) as LayoutCont;
+      this.holder.save();
+    }, 'change');
+
+    this.model.setHandler({
+      onDrop: this.onDrop
+    });
+  }
+
+  onDrop = (item: LayoutItem): Promise<LayoutItem> => {
+    return (
+      this.holder.getObject(item.id)
       .then((obj: ObjectBase) => {
         const views = DataSourceHolder.findAllViews( OBJIOItem.getClass(obj) );
 
@@ -43,8 +54,8 @@ export class DocLayout extends Base {
           items: views.map(view => view.viewType)
         }).then(view => {
           return (
-            views.find(v => v.viewType == view)
-            .object({source: obj, layout: this, viewType: view})
+              views.find(v => v.viewType == view)
+              .object({source: obj, layout: this, viewType: view})
           );
         });
       })
@@ -55,24 +66,15 @@ export class DocLayout extends Base {
         );
       })
       .then((holder: DataSourceHolder) => {
-        this.model.getLastDrop().id = holder.holder.getID();
         this.objects.push(holder);
 
         this.objects.holder.save();
         this.layout = clone(this.model.getLayout()) as LayoutCont;
         this.updateLayoutMap();
         this.holder.save();
-      }).catch(e => {
-        console.log(e);
-        this.model.remove(this.model.getLastDrop().id);
-        this.holder.save();
-      });
-    }, 'drop');
-
-    this.model.subscribe(() => {
-      this.layout = clone(this.model.getLayout()) as LayoutCont;
-      this.holder.save();
-    }, 'change');
+        return { id: holder.holder.getID() };
+      })
+    );
   }
 
   updateLayoutMap() {
