@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { List } from 'ts-react-ui/list';
+import { List2 } from 'ts-react-ui/list2';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
 import { TagFilter } from '../client/tag-filter';
@@ -115,7 +115,7 @@ export class TagFilterView extends React.Component<Props> {
         {this.renderTargetSelect()}
         {this.renderJoinColumnSelect()}
         <FitToParent wrapToFlex>
-          <List border model={model.getRender()}/>
+          <List2 model={model.getRender()}/>
         </FitToParent>
         <div>rows: {model.getTotalRows()}</div>
       </React.Fragment>

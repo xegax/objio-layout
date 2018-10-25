@@ -70,6 +70,10 @@ export class DataSourceHolder<
     });
   }
 
+  getTools(): Array<JSX.Element> {
+    return [];
+  }
+
   get(): TSource {
     return this.source as TSource;
   }

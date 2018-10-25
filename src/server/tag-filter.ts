@@ -47,5 +47,5 @@ export class TagFilter<
     ...CategoryFilter.SERIALIZE(),
     target:     { type: 'object' },
     joinColumn: { type: 'string' }
-  });
+  })
 }

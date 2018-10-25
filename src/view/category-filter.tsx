@@ -1,13 +1,15 @@
 import * as React from 'react';
-import { List } from 'ts-react-ui/list';
+import { List2, List2Item } from 'ts-react-ui/list2';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
-import { CategoryFilter } from '../client/category-filter';
+import { CategoryFilter, Row } from '../client/category-filter';
 
 export { CategoryFilter };
 
 const classes = {
-  filter: 'category-filter'
+  filter: 'category-filter',
+  item: 'category-item',
+  itemWrap: 'category-item-wrap'
 };
 
 export interface Props {
@@ -71,7 +73,7 @@ export class CategoryFilterView extends React.Component<Props> {
         {this.renderTableName()}
         {this.renderColumnSelect()}
         <FitToParent wrapToFlex>
-          <List border model={model.getRender()}/>
+          <List2 model={model.getRender()}/>
         </FitToParent>
         <div>rows: {model.getTotalRows()}</div>
       </React.Fragment>

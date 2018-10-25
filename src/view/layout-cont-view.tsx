@@ -7,6 +7,7 @@ import { DocLayout } from '../client/layout';
 const classes = {
   cont: 'layout-cont',
   title: 'layout-cont-title',
+  tools: 'layout-cont-tools',
   titleWrap: 'layout-cont-titlewrap',
   header: 'layout-cont-header'
 };
@@ -74,6 +75,31 @@ export class LayoutContView extends React.Component<Props> {
     );
   }
 
+  renderTools() {
+    const obj = this.props.model;
+    const owner = this.props.owner;
+    const tools = [
+      ...obj.getTools(),
+      <i
+        onClick={() => {
+          obj.toggleEdit();
+        }}
+        style={{backgroundColor: obj.isEdit() ? 'gray' : null }}
+        className='fa fa-edit'
+      />,
+      owner && owner.onRemove ?
+        <i
+          onClick={owner.onRemove}
+          className='fa fa-remove'
+        /> : null
+    ] as Array<JSX.Element>;
+    return (
+      <div className={classes.tools}>
+        {tools.filter(t => t).map((item, i) => React.cloneElement(item, {key: i}))}
+      </div>
+    );
+  }
+
   render() {
     const obj = this.props.model;
     const docLayout = obj.getLayout() as DocLayout;
@@ -89,20 +115,7 @@ export class LayoutContView extends React.Component<Props> {
           >
             {this.renderTitle()}
           </Header>
-          <div style={{flexGrow: 0}}>
-            <i
-              onClick={() => {
-                obj.toggleEdit();
-              }}
-              style={{cursor: 'pointer', backgroundColor: obj.isEdit() ? 'gray' : null }}
-              className={'fa fa-edit'}
-            />
-            {owner && owner.onRemove && <i
-              onClick={owner.onRemove}
-              style={{cursor: 'pointer'}}
-              className='fa fa-remove'
-            />}
-          </div>
+          {this.renderTools()}
         </div>
         {this.props.children}
       </div>

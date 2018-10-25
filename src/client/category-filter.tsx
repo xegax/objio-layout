@@ -1,25 +1,32 @@
 import * as React from 'react';
-import { CategoryFilter as Base } from '../server/category-filter';
+import { CategoryFilter as Base, SortType, SortDir } from '../server/category-filter';
 import { DocTable } from 'objio-object/client/doc-table';
 import { ColumnAttr, LoadCellsArgs, Condition } from 'objio-object/client/table';
-import { RenderListModel } from 'ts-react-ui/list';
-import { RenderArgs } from 'ts-react-ui/model/list';
-import { Cancelable, ExtPromise } from 'objio';
 import { DocLayout } from './layout';
-import { className as cn } from 'ts-react-ui/common/common';
 import { CondHolder, CondHolderOwner } from './cond-holder';
 import { OBJIOItem } from 'objio';
+import { List2Model, List2Item } from 'ts-react-ui/list2';
+
+export interface Row extends List2Item {
+  row: Array<string>;
+}
+
+export { SortType, SortDir };
 
 const classes = {
   excluded: 'excluded'
 };
 
-const TIME_BETWEEN_REQUEST = 300;
-
 export interface CategoryFilterOwner extends OBJIOItem {
   getColumn(): string;
   setCondition(cond: Condition): void;
   get(): DocTable;
+
+  getSortType(): SortType;
+  setSortType(type: SortType): void;
+
+  getSortDir(): SortDir;
+  setSortDir(dir: SortDir): void;
 }
 
 export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHolderOwner, CategoryFilterOwner {
@@ -42,6 +49,22 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
     return true;
   }
 
+  setSortType(type: SortType) {
+    if (!super.setSortType(type))
+      return false;
+
+    this.impl.updateSubtable();
+    return true;
+  }
+
+  setSortDir(dir: SortDir) {
+    if (!super.setSortDir(dir))
+      return false;
+
+    this.impl.updateSubtable();
+    return true;
+  }
+
   getColumns(): Array<ColumnAttr> {
     return this.source.getAllColumns();
   }
@@ -57,12 +80,39 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
   getRender() {
     return this.impl.getRender();
   }
+
+  getSourceTotalRows(): number {
+    return this.source.getTotalRowsNum();
+  }
+
+  getTools(): Array<JSX.Element> {
+    const classes = {
+      'AscAlpha': 'fa fa-sort-alpha-asc',
+      'DescAlpha': 'fa fa-sort-alpha-desc',
+      'AscCount': 'fa fa-sort-amount-asc',
+      'DescCount': 'fa fa-sort-amount-desc'
+    };
+
+    return [
+      <i
+        className='fa fa-sort'
+        onClick={() => {
+          this.setSortDir(this.getSortDir() == 'Asc' ? 'Desc' : 'Asc');
+        }}
+      />,
+      <i
+        className={classes[this.getSortDir() + this.getSortType()]}
+        onClick={() => {
+          this.setSortType(this.getSortType() == 'Alpha' ? 'Count' : 'Alpha');
+        }}
+      />
+    ];
+  }
 }
 
 export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner = CategoryFilterOwner> {
   protected owner: TCategoryFilterOwner;
-  private render = new RenderListModel(0, 20);
-  private lastLoadTimer: Cancelable;
+  private render = new List2Model();
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
   private rowsNum: number = 0;
@@ -74,22 +124,27 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
     this.owner = object;
 
     this.render.setHandler({
-      loadItems: (first, count) => {
-        if (this.lastLoadTimer) {
-          this.lastLoadTimer.cancel();
-          this.lastLoadTimer = null;
-        }
+      loadNext: (first: number, count: number): Promise<Array<Row>> => {
+        const args: LoadCellsArgs = { first, count };
+        if (this.subtable)
+          args.table = this.subtable;
 
-        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(TIME_BETWEEN_REQUEST) );
-        return this.lastLoadTimer.then(() => {
-          this.lastLoadTimer = null;
-
-          const args: LoadCellsArgs = { first, count };
-          if (this.subtable)
-            args.table = this.subtable;
-
-          return this.getSource().getTableRef().loadCells(args);
+        return (
+          this.getSource().getTableRef().loadCells(args)
+        ).then(rows => {
+          return rows.map((row, i) => ({ id: (first + i) + '', row }))
         });
+      },
+      render: (item: Row, idx: number): JSX.Element => {
+        const rows = this.getSource().getTotalRowsNum();
+        const perc = +item.row[1] * 100 / rows;
+        return (
+          <div key={idx} title={`${item.row[1]} (${Math.round(perc * 100) / 100}%)`}>
+            <div style={{width: perc + '%'}}>
+              {item.row[0] || '$missing$'}
+            </div>
+          </div>
+        );
       }
     });
 
@@ -105,10 +160,10 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
   }
 
   updateCondition() {
-    this.sel = this.render.getSel().map(rowIdx => {
-      return this.rowsCache[rowIdx] || (
-        this.rowsCache[rowIdx] = this.render.getItems(+rowIdx, 1)[0][0] as string
-      );
+    const items = this.render.getItems();
+    this.sel = this.render.getSelectedIds().map(rowIdx => {
+      const item = items[+rowIdx] as Row;
+      return item.row[0];
     });
 
     const column = this.owner.getColumn();
@@ -142,55 +197,31 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
   }
 
   onInit = () => {
-    this.render.setHeader(false);
     this.updateSubtable();
 
     this.render.subscribe(() => {
       this.updateCondition();
-    }, 'select-row');
+    }, 'select');
 
     return Promise.resolve();
   }
 
   updateSubtable = () => {
+    const column = this.owner.getSortType() == 'Alpha' ? this.owner.getColumn() : 'count';
+    const dir = this.owner.getSortDir() == 'Asc' ? 'asc' : 'desc';
     return this.owner.get().getTableRef().createSubtable({
       distinct: { column: this.owner.getColumn() },
-      sort: [{ column: 'count', dir: 'desc' }]
+      sort: [{ column, dir }]
     }).then(res => {
       this.colsToRender = res.columns;
       this.subtable = res.subtable;
       this.rowsNum = res.rowsNum;
-      this.updateRenderModel();
     }).then(() => {
       this.rowsCache = {};
       this.sel = [];
-      this.render.reload();
+      this.render.clear({ reload: true });
       this.owner.holder.notify();
     });
-  }
-
-  updateRenderModel() {
-    this.render.setItemsCount(this.rowsNum);
-    this.render.setColumns([{
-        name: this.colsToRender[0].name,
-        render: (args: RenderArgs<Array<string>>) => {
-          return (
-            <div style={{display: 'flex'}} className={cn(this.excludeSel.has(args.item[0]) && classes.excluded)}>
-              <i
-                className='fa fa-eye-slash'
-                onClick={evt => {
-                  this.excludeValue(args.item[0]);
-                  evt.preventDefault();
-                  evt.stopPropagation();
-                }}
-              />
-              <div style={{flexGrow: 1}}>{args.item[0]}</div>
-              <div style={{flexGrow: 0}}>{args.item[1]}</div>
-            </div>
-          );
-        }
-      }
-    ]);
   }
 
   excludeValue(value: string) {
@@ -204,7 +235,7 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
     this.owner.holder.delayedNotify();
   }
 
-  getRender(): RenderListModel {
+  getRender(): List2Model {
     return this.render;
   }
 
@@ -214,5 +245,9 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
 
   getTotalRows() {
     return this.rowsNum;
+  }
+
+  getSourceTotalRows() {
+    return this.owner.get().getTotalRowsNum();
   }
 }

@@ -15,6 +15,14 @@
     white-space: nowrap;
   }
 
+  &-tools {
+    flex-grow: 0;
+    i {
+      cursor: pointer;
+      margin-right: 5px;
+    }
+  }
+
   &-title {
     flex-grow: 1;
     overflow: hidden;
