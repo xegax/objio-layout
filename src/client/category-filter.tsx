@@ -5,11 +5,24 @@ import { ColumnAttr, LoadCellsArgs, Condition } from 'objio-object/client/table'
 import { DocLayout } from './layout';
 import { CondHolder, CondHolderOwner } from './cond-holder';
 import { OBJIOItem } from 'objio';
-import { List2Model, List2Item } from 'ts-react-ui/list2';
+import { List2Item } from 'ts-react-ui/list2';
+import { DropDownListModel } from 'ts-react-ui/drop-down-list';
 
-export interface Row extends List2Item {
-  row: Array<string>;
+function throttling(f: () => void, ms: number): () => void {
+  let t = null;
+  return () => {
+    if (t != null)
+      return;
+
+    t = setTimeout(() => {
+      t = null;
+      f();
+    }, ms);
+  };
 }
+
+export type RowData = { row: Array<string> };
+export type Row = List2Item<RowData>;
 
 export { SortType, SortDir };
 
@@ -96,27 +109,40 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
     return [
       <i
         className='fa fa-sort'
-        onClick={() => {
+        onClick={e => {
           this.setSortDir(this.getSortDir() == 'Asc' ? 'Desc' : 'Asc');
+          e.preventDefault();
         }}
       />,
       <i
         className={classes[this.getSortDir() + this.getSortType()]}
-        onClick={() => {
+        onClick={e => {
           this.setSortType(this.getSortType() == 'Alpha' ? 'Count' : 'Alpha');
+          e.preventDefault();
         }}
       />
     ];
+  }
+
+  getName(): string | JSX.Element {
+    if (this.isEdit())
+      return super.getName();
+
+    return `${super.getName()} ( ${this.getTotalRows()} )`;
+  }
+
+  resetSelect() {
+    this.impl.getRender().clearSelect();
+    this.impl.getRender().setFilter('');
   }
 }
 
 export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner = CategoryFilterOwner> {
   protected owner: TCategoryFilterOwner;
-  private render = new List2Model();
+  private render = new DropDownListModel<RowData>();
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
   private rowsNum: number = 0;
-  private rowsCache: {[rowIdx: string]: string} = {};
   private sel = Array<string>();
   private excludeSel = new Set<string>();
 
@@ -124,24 +150,30 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
     this.owner = object;
 
     this.render.setHandler({
-      loadNext: (first: number, count: number): Promise<Array<Row>> => {
+      loadNext: (first: number, count: number): Promise< Array<Row> > => {
         const args: LoadCellsArgs = { first, count };
         if (this.subtable)
           args.table = this.subtable;
 
         return (
           this.getSource().getTableRef().loadCells(args)
-        ).then(rows => {
-          return rows.map((row, i) => ({ id: (first + i) + '', row }))
+        ).then((rows: Array< Array<string> > ) => {
+          return rows.map((row: Array<string>, i) => {
+            return {
+              id: row[0],
+              label: row[0],
+              data: { row }
+            } as Row;
+          });
         });
       },
       render: (item: Row, idx: number): JSX.Element => {
         const rows = this.getSource().getTotalRowsNum();
-        const perc = +item.row[1] * 100 / rows;
+        const perc = +item.data.row[1] * 100 / rows;
         return (
-          <div key={idx} title={`${item.row[1]} (${Math.round(perc * 100) / 100}%)`}>
-            <div style={{width: perc + '%'}}>
-              {item.row[0] || '$missing$'}
+          <div key={idx} title={`${item.data.row[1]} (${Math.round(perc * 100) / 100}%)`}>
+            <div style={{width: perc + '%', backgroundColor: 'lightgreen'}}>
+              {item.data.row[0] || '$missing$'}
             </div>
           </div>
         );
@@ -160,11 +192,7 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
   }
 
   updateCondition() {
-    const items = this.render.getItems();
-    this.sel = this.render.getSelectedIds().map(rowIdx => {
-      const item = items[+rowIdx] as Row;
-      return item.row[0];
-    });
+    this.sel = this.render.getSelectedItems().map(item => item.id);
 
     const column = this.owner.getColumn();
     if (this.sel.length + this.excludeSel.size == 0) {
@@ -201,15 +229,24 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
 
     this.render.subscribe(() => {
       this.updateCondition();
+      this.render.setFilter('');
     }, 'select');
+
+    this.render.setFilterable(true);
+    this.render.subscribe(throttling(() => {
+      this.updateSubtable();
+    }, 2000), 'filter');
 
     return Promise.resolve();
   }
 
   updateSubtable = () => {
+    const filter = this.render.getFilter();
     const column = this.owner.getSortType() == 'Alpha' ? this.owner.getColumn() : 'count';
     const dir = this.owner.getSortDir() == 'Asc' ? 'asc' : 'desc';
+    const like = true;
     return this.owner.get().getTableRef().createSubtable({
+      filter: filter ? { value: filter, column: this.owner.getColumn(), like } : null,
       distinct: { column: this.owner.getColumn() },
       sort: [{ column, dir }]
     }).then(res => {
@@ -217,7 +254,6 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
       this.subtable = res.subtable;
       this.rowsNum = res.rowsNum;
     }).then(() => {
-      this.rowsCache = {};
       this.sel = [];
       this.render.clear({ reload: true });
       this.owner.holder.notify();
@@ -235,7 +271,7 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
     this.owner.holder.delayedNotify();
   }
 
-  getRender(): List2Model {
+  getRender(): DropDownListModel<RowData> {
     return this.render;
   }
 

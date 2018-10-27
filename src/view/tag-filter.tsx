@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { List2 } from 'ts-react-ui/list2';
+import { DropDownList } from 'ts-react-ui/drop-down-list';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
 import { TagFilter } from '../client/tag-filter';
@@ -114,10 +114,16 @@ export class TagFilterView extends React.Component<Props> {
         {this.renderColumnSelect()}
         {this.renderTargetSelect()}
         {this.renderJoinColumnSelect()}
-        <FitToParent wrapToFlex>
-          <List2 model={model.getRender()}/>
-        </FitToParent>
-        <div>rows: {model.getTotalRows()}</div>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          <i
+            className='fa fa-undo'
+            style={{flexGrow: 0, cursor: 'pointer', marginLeft: 5, marginRight: 5}}
+            onClick={() => {
+              model.resetSelect();
+            }}
+          />
+          <DropDownList model={model.getRender()} style={{flexGrow: 1}}/>
+        </div>
       </React.Fragment>
     );
   }

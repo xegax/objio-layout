@@ -3,6 +3,7 @@ import { List2, List2Item } from 'ts-react-ui/list2';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
 import { CategoryFilter, Row } from '../client/category-filter';
+import { DropDownList } from 'ts-react-ui/drop-down-list';
 
 export { CategoryFilter };
 
@@ -72,10 +73,16 @@ export class CategoryFilterView extends React.Component<Props> {
       <React.Fragment>
         {this.renderTableName()}
         {this.renderColumnSelect()}
-        <FitToParent wrapToFlex>
-          <List2 model={model.getRender()}/>
-        </FitToParent>
-        <div>rows: {model.getTotalRows()}</div>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          <i
+            className='fa fa-undo'
+            style={{flexGrow: 0, cursor: 'pointer', marginLeft: 5, marginRight: 5}}
+            onClick={() => {
+              model.resetSelect();
+            }}
+          />
+          <DropDownList model={model.getRender()} style={{flexGrow: 1}}/>
+        </div>
       </React.Fragment>
     );
   }

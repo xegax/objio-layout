@@ -40,5 +40,5 @@ export class DrillDownTable<
     idColumn:     { type: 'string' },
     colsToShow:   { type: 'json' },
     searchColumn: { type: 'string' }
-  });
+  })
 }

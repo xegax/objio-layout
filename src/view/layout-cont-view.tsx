@@ -45,7 +45,7 @@ export class LayoutContView extends React.Component<Props> {
       title = (
         <input
           autoFocus
-          defaultValue={model.getName()}
+          defaultValue={model.getName() as string}
           onKeyDown={evt => {
             if (evt.keyCode == 13) {
               owner.setName && owner.setName(evt.currentTarget.value);

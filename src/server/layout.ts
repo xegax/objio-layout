@@ -92,7 +92,7 @@ export class DataSourceHolder<
     return srcs;
   }
 
-  getName(): string {
+  getName(): string | JSX.Element {
     return this.name;
   }
 
