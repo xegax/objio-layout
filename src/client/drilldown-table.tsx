@@ -65,6 +65,10 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
     }, 'select-row');
   }
 
+  isInvokesInProgress(): boolean {
+    return this.source.getTableRef().holder.getInvokesInProgress() > 0;
+  }
+
   getSelProv(): SelectProv {
     return {
       getSelection: (): Array<string> => {
@@ -79,6 +83,10 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
   }
 
   onInit = () => {
+    this.source.getTableRef().holder.subscribe(() => {
+      this.holder.delayedNotify();
+    }, 'invokesInProgress');
+
     this.updateTable();
     return Promise.resolve();
   }

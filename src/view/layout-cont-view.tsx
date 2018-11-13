@@ -3,6 +3,7 @@ import { DataSourceHolder } from '../server/layout';
 import './layout-cont-view.scss';
 import { Header } from 'ts-react-ui/layout';
 import { DocLayout } from '../client/layout';
+import { EventType } from 'objio';
 
 const classes = {
   cont: 'layout-cont',
@@ -14,9 +15,9 @@ const classes = {
 
 export interface Owner {
   onRemove?();
-  onEdit?();
-  isEdit?(): boolean;
-  setName?(name: string): void;
+  editTitle?();
+  isTitleEdit?(): boolean;
+  setTitle?(name: string): void;
 }
 
 export interface Props {
@@ -27,6 +28,7 @@ export interface Props {
 
 export class LayoutContView extends React.Component<Props> {
   subscriber = () => {
+    console.log('invokes', this.props.model.get().holder.getInvokesInProgress());
     this.setState({});
   }
 
@@ -41,18 +43,18 @@ export class LayoutContView extends React.Component<Props> {
   renderTitle(): JSX.Element {
     const { model, owner } = this.props;
     let title: JSX.Element;
-    if (owner.isEdit()) {
+    if (owner.isTitleEdit()) {
       title = (
         <input
           autoFocus
           defaultValue={model.getName() as string}
           onKeyDown={evt => {
             if (evt.keyCode == 13) {
-              owner.setName && owner.setName(evt.currentTarget.value);
+              owner.setTitle && owner.setTitle(evt.currentTarget.value);
             }
           }}
           onBlur={evt => {
-            owner.setName && owner.setName(evt.currentTarget.value);
+            owner.setTitle && owner.setTitle(evt.currentTarget.value);
           }}
         />
       );
@@ -60,7 +62,7 @@ export class LayoutContView extends React.Component<Props> {
       title = (
         <div className={classes.titleWrap}
           onDoubleClick={() => {
-            owner.onEdit && owner.onEdit();
+            owner.editTitle && owner.editTitle();
           }}
         >
           {model.getName()}
@@ -79,6 +81,10 @@ export class LayoutContView extends React.Component<Props> {
     const obj = this.props.model;
     const owner = this.props.owner;
     const tools = [
+      <i
+        className='fa fa-spinner fa-spin'
+        style={{ display: obj.isInvokesInProgress() ? null : 'none' }}
+      />,
       ...obj.getTools(),
       <i
         onClick={() => {
@@ -108,7 +114,7 @@ export class LayoutContView extends React.Component<Props> {
       <div className={classes.cont}>
         <div className={classes.header}>
           <Header
-            enabled={!owner.isEdit()}
+            enabled={!owner.isTitleEdit()}
             key={this.props.layoutId}
             data={{id: this.props.layoutId}}
             layout={docLayout.getLayout()}

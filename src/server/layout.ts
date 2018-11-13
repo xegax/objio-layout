@@ -78,6 +78,10 @@ export class DataSourceHolder<
     return this.source as TSource;
   }
 
+  isInvokesInProgress(): boolean {
+    return this.source.holder.getInvokesInProgress() > 0;
+  }
+
   getViewType(): string {
     return this.viewType;
   }

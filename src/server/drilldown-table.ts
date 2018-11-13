@@ -32,6 +32,7 @@ export class DrillDownTable<
   setSearchColumn(col: string): void {
     this.searchColumn = col;
     this.holder.save();
+    this.holder.delayedNotify();
   }
 
   static TYPE_ID = 'DrillDownTable';

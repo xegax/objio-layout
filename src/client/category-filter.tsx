@@ -46,6 +46,10 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
   private condHolder = new CondHolder();
   private impl = new CategoryFilterImpl(this);
 
+  isInvokesInProgress(): boolean {
+    return this.source.getTableRef().holder.getInvokesInProgress() > 0;
+  }
+
   getCondHolder(): CondHolder {
     return this.condHolder;
   }
@@ -226,6 +230,9 @@ export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner
 
   onInit = () => {
     this.updateSubtable();
+    this.getSource().getTableRef().holder.subscribe(() => {
+      this.owner.holder.delayedNotify();
+    }, 'invokesInProgress');
 
     this.render.subscribe(() => {
       this.updateCondition();

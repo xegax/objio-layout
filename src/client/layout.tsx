@@ -2,7 +2,7 @@ import * as React from 'react';
 import { DocLayout as Base, DataSourceHolder } from '../server/layout';
 import { LayoutModel, clone, LayoutCont, LayoutItem } from 'ts-react-ui/model/layout';
 import { OBJIOItem } from 'objio';
-import { LayoutContView } from '../view/layout-cont-view';
+import { LayoutContView, Owner } from '../view/layout-cont-view';
 import { ObjectBase } from 'objio-object/client/object-base';
 import { select } from 'ts-react-ui/prompt';
 
@@ -89,14 +89,14 @@ export class DocLayout extends Base {
         </React.Fragment>
       ));
 
-      const owner = {
-        isEdit: () => this.edit == obj,
-        onEdit: () => {
+      const owner: Owner = {
+        isTitleEdit: () => this.edit == obj,
+        editTitle: () => {
           this.edit && this.edit.holder.delayedNotify();
           this.edit = obj;
           this.edit.holder.delayedNotify();
         },
-        setName: (name: string) => {
+        setTitle: (name: string) => {
           if (!this.edit)
             return;
 
