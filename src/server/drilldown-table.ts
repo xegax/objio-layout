@@ -1,6 +1,7 @@
 import { DataSourceHolder, DocLayout } from './layout';
 import { DocTable } from 'objio-object/server/doc-table';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, OBJIOItem } from 'objio';
+import { DrillDownTableBase } from '../base/drilldown-table';
 
 export class DrillDownTable<
     TSource extends DocTable = DocTable,
@@ -42,4 +43,7 @@ export class DrillDownTable<
     colsToShow:   { type: 'json' },
     searchColumn: { type: 'string' }
   })
+}
+
+export class DrillDownTable2 extends DrillDownTableBase<DocTable> {
 }

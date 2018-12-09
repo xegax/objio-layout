@@ -1,12 +1,12 @@
 import { OBJIOItem, OBJIOItemClass } from 'objio';
-import { Props } from 'objio-object/view/config';
+// import { Props } from 'objio-object/view/config';
 
 export interface FactoryItem< TProps = {}, TArgs = {}, TObject = OBJIOItem> {
   classObj: OBJIOItemClass;
   viewType?: string;
   view(props: TProps): JSX.Element;
   object(args: TArgs): TObject;
-  config?(props: Props): JSX.Element;
+  config?(props: any): JSX.Element;
   sources?:  Array<Array<OBJIOItemClass>>;
   flags?: Set<string> | Array<string>;
   description?: string;

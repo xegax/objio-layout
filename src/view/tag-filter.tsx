@@ -3,6 +3,7 @@ import { DropDownList } from 'ts-react-ui/drop-down-list';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
 import { TagFilter } from '../client/tag-filter';
+import { DropDownLoadable } from 'ts-react-ui/drop-down-loadable';
 
 export { TagFilter };
 
@@ -122,7 +123,13 @@ export class TagFilterView extends React.Component<Props> {
               model.resetSelect();
             }}
           />
-          <DropDownList model={model.getRender()} style={{flexGrow: 1}}/>
+          <DropDownLoadable
+            style={{flexGrow: 1}}
+            totalValues={() => this.props.model.getTotalRows()}
+            onLoadNext={(from, count) => this.props.model.loadNext(from, count)}
+            onSelect={value => {
+            }}
+          />
         </div>
       </React.Fragment>
     );

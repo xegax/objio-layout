@@ -1,11 +1,14 @@
 import { OBJIOItemClass } from 'objio';
-import { DocLayout } from './layout';
+import { DocLayout as DocLayoutOld } from './layout';
 import { DataSourceHolder } from '../server/layout';
 import { CategoryFilter } from './category-filter';
 import { DrillDownTable } from './drilldown-table';
 import { RangeFilter } from './range-filter';
 import { SelectDetails } from './select-details';
 import { TagFilter } from './tag-filter';
+import { DocLayout, ObjectHolderBase } from './layout2';
+
+import { DrillDownTable2 } from './drilldown-table2';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -13,8 +16,11 @@ export function getClasses(): Array<OBJIOItemClass> {
     TagFilter,
     CategoryFilter,
     DrillDownTable,
+    DrillDownTable2,
     RangeFilter,
     SelectDetails,
-    DocLayout
+    DocLayout,
+    ObjectHolderBase,
+    DocLayoutOld
   ];
 }

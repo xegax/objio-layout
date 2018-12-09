@@ -139,12 +139,29 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
     this.impl.getRender().clearSelect();
     this.impl.getRender().setFilter('');
   }
+
+  loadNext(first: number, count: number): Promise<Array<{value: string; render?: string}>> {
+    const args: LoadCellsArgs = { first, count };
+    if (this.impl.subtable)
+      args.table = this.impl.subtable;
+
+    return (
+      this.get().getTableRef().loadCells(args)
+    ).then((rows: Array< Array<string> > ) => {
+      return rows.map((row: Array<string>, i) => {
+        return {
+          value: row[0],
+          render: row[0]
+        };
+      });
+    });
+  }
 }
 
 export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner = CategoryFilterOwner> {
   protected owner: TCategoryFilterOwner;
   private render = new DropDownListModel<RowData>();
-  private subtable: string;
+  subtable: string;
   private colsToRender = Array<ColumnAttr>();
   private rowsNum: number = 0;
   private sel = Array<string>();

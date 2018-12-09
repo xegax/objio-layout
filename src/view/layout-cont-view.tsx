@@ -4,6 +4,7 @@ import './layout-cont-view.scss';
 import { Header } from 'ts-react-ui/layout';
 import { DocLayout } from '../client/layout';
 import { EventType } from 'objio';
+import { ObjectHolderBase } from '../client/layout2';
 
 const classes = {
   cont: 'layout-cont',
@@ -22,13 +23,14 @@ export interface Owner {
 
 export interface Props {
   layoutId: string;
-  model: DataSourceHolder;
+  model: DataSourceHolder | ObjectHolderBase;
+  layout?: DocLayout;
   owner?: Owner;
 }
 
 export class LayoutContView extends React.Component<Props> {
   subscriber = () => {
-    console.log('invokes', this.props.model.get().holder.getInvokesInProgress());
+    // console.log('invokes', this.props.model.get().holder.getInvokesInProgress());
     this.setState({});
   }
 
@@ -83,16 +85,16 @@ export class LayoutContView extends React.Component<Props> {
     const tools = [
       <i
         className='fa fa-spinner fa-spin'
-        style={{ display: obj.isInvokesInProgress() ? null : 'none' }}
+        style={{ display: obj.getInvokesInProgress() ? null : 'none' }}
       />,
-      ...obj.getTools(),
+      /* ...obj.getTools(),
       <i
         onClick={() => {
-          obj.toggleEdit();
+          //obj.toggleEdit();
         }}
         style={{backgroundColor: obj.isEdit() ? 'gray' : null }}
         className='fa fa-edit'
-      />,
+      />,*/
       owner && owner.onRemove ?
         <i
           onClick={owner.onRemove}
@@ -108,7 +110,7 @@ export class LayoutContView extends React.Component<Props> {
 
   render() {
     const obj = this.props.model;
-    const docLayout = obj.getLayout() as DocLayout;
+    const docLayout = null;// = obj.getLayout() as DocLayout;
     const owner = this.props.owner;
     return (
       <div className={classes.cont}>

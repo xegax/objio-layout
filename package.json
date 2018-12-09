@@ -12,7 +12,7 @@
     "dev": "npm run prepare",
     "clean": "npm run clean-src && npm run clean-dirs",
     "clean-src": "shx rm -rf src/**/*.js src/**/*.js.map src/**/*.d.ts *.d.ts *.js.map *.js",
-    "clean-dirs": "shx rm -rf client server view"
+    "clean-dirs": "shx rm -rf client server view base"
   },
   "author": "xega",
   "license": "ISC",

@@ -15,6 +15,12 @@
     white-space: nowrap;
   }
 
+  &.select {
+    .layout-cont-header {
+      background-color: #8fbfdf;
+    }
+  }
+
   &-tools {
     flex-grow: 0;
     i {

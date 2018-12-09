@@ -3,7 +3,7 @@ import { List2, List2Item } from 'ts-react-ui/list2';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import './_category-filter.scss';
 import { CategoryFilter, Row } from '../client/category-filter';
-import { DropDownList } from 'ts-react-ui/drop-down-list';
+import { DropDownLoadable } from 'ts-react-ui/drop-down-loadable';
 
 export { CategoryFilter };
 
@@ -62,6 +62,10 @@ export class CategoryFilterView extends React.Component<Props> {
     );
   }
 
+  onLoadNext = (from: number, count: number) => {
+    return this.props.model.loadNext(from, count);
+  }
+
   renderData(): JSX.Element {
     const model = this.props.model;
     const state = model.get();
@@ -81,7 +85,11 @@ export class CategoryFilterView extends React.Component<Props> {
               model.resetSelect();
             }}
           />
-          <DropDownList model={model.getRender()} style={{flexGrow: 1}}/>
+          <DropDownLoadable
+            style={{flexGrow: 1}}
+            totalValues={() => this.props.model.getTotalRows()}
+            onLoadNext={this.onLoadNext}
+          />
         </div>
       </React.Fragment>
     );
