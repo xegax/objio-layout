@@ -11,6 +11,7 @@ export class ObjectHolderBase<T extends ObjectBase = ObjectBase> extends OBJIOIt
   protected name: string;
   protected obj: T;
   protected view: string;
+  protected tasks = new Array<Promise<any>>();
 
   constructor(args?: ObjectHolderBaseArgs) {
     super();
@@ -42,12 +43,35 @@ export class ObjectHolderBase<T extends ObjectBase = ObjectBase> extends OBJIOIt
     this.holder.delayedNotify();
   }
 
-  getInvokesInProgress() {
-    return this.obj.getInvokesInProgress();
+  getTasksInProgress(): number {
+    return this.tasks.length;
   }
 
   getProps(): JSX.Element {
     return null;
+  }
+
+  private addTask<T>(task: Promise<T>) {
+    if (this.tasks.indexOf(task) == -1)
+      this.tasks.push(task);
+  }
+
+  private removeTask<T>(task: Promise<T>) {
+    this.tasks.splice(this.tasks.indexOf(task), 1);
+    this.holder.delayedNotify();
+  }
+
+  watchTask<T>(task: Promise<T>): Promise<T> {
+    this.addTask(task);
+    return (
+      task.then(res => {
+        this.removeTask(task);
+        return res;
+      }).catch(err => {
+        this.removeTask(task);
+        return Promise.reject(err);
+      })
+    );
   }
 
   static TYPE_ID = 'LayoutObjectHolder';

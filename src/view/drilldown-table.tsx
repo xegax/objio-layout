@@ -15,7 +15,7 @@ export interface Props {
   model: DrillDownTable;
 }
 
-export class DrillDownTable2View extends React.Component<Props> {
+export class DrillDownTableView extends React.Component<Props> {
   subscriber = () => {
     this.setState({});
   }

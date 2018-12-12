@@ -17,7 +17,7 @@ export interface Props {
   model: RangeFilter;
 }
 
-export class RangeFilter2View extends React.Component<Props> {
+export class RangeFilterView extends React.Component<Props> {
   subscriber = () => {
     this.setState({});
   }

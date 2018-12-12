@@ -33,15 +33,6 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
       onCreate: this.onCreate,
       onObjChange: this.onObjChange
     });
-
-    //this.holder.subscribe(this.requestTable, EventType.change);
-    /*this.tableRender.subscribe(() => {
-      this.layout.delayedNotifyObjects(EventTypes.selProvSelection);
-    }, 'select-row');*/
-  }
-
-  getInvokesInProgress() {
-    return super.getInvokesInProgress() + this.obj.getTableRef().getInvokesInProgress();
   }
 
   getTableRender() {
@@ -127,20 +118,11 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
   }
 
   private onLoad = () => {
-    this.obj.getTableRef().holder.subscribe(() => {
-      console.log('invoke in progress', this.getInvokesInProgress());
-      this.holder.delayedNotify();
-    }, 'invokesInProgress');
-
     this.updateTable();
     return Promise.resolve();
   }
 
   private onCreate = () => {
-    this.obj.getTableRef().holder.subscribe(() => {
-      this.holder.delayedNotify();
-    }, 'invokesInProgress');
-
     this.colsToShow = this.obj.getAllColumns().map(col => col.name);
     this.holder.save();
     this.updateTable();
@@ -170,7 +152,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
       if (this.subtable)
         args.table = this.subtable;
 
-      return this.obj.getTableRef().loadCells(args);
+      return this.watchTask(this.obj.getTableRef().loadCells(args));
     });
   }
 
@@ -210,7 +192,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     if (this.sort)
       args.sort = [ this.sort ];
 
-    this.obj.getTableRef().createSubtable(args)
+    const task = this.obj.getTableRef().createSubtable(args)
     .then(res => {
       this.colsFromServer = res.columns.slice();
       this.subtable = res.subtable;
@@ -218,6 +200,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
       this.updateTableRender(res.rowsNum, this.getColsToShow());
       this.holder.notify();
     });
+    this.watchTask(task);
   };
 
   private updateTableRender(rowsNum: number, cols: Array<ColumnAttr>) {

@@ -58,7 +58,7 @@ export class ObjHolderView extends React.Component<Props> {
     const tools = [
       <i
         className='fa fa-spinner fa-spin'
-        style={{ display: obj.getInvokesInProgress() ? null : 'none' }}
+        style={{ display: obj.getTasksInProgress() ? null : 'none' }}
       />,
       <i
         onClick={this.remove}

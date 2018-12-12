@@ -88,7 +88,7 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
     if (this.subtable)
       args.table = this.subtable;
 
-    return (
+    return this.watchTask(
       this.getObject().getTableRef().loadCells(args)
       .then((rows: Array< Array<string> > ) => {
         return rows.map((row: Array<string>, i) => {
@@ -110,6 +110,7 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
       <PropsGroup label='table' key={this.holder.getID()}>
         <Tabs defaultSelect='data'>
           <Tab id='data' label='data'>
+            <PropItem label='rows' value={this.rowsNum}/>
             <DropDownPropItem
               label='column'
               value={this.column ? { value: this.column } : null}
@@ -154,14 +155,15 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
       sort: this.sortDir == 'natural' ? null : [{ column, dir }]
     };
 
-    this.obj.getTableRef().createSubtable(args)
+    const task = this.obj.getTableRef().createSubtable(args)
     .then(res => {
       this.dataKey++;
       this.rowsNum = res.rowsNum;
       this.subtable = res.subtable;
       this.listModel.setValues([]);
-      this.loadNext(0, 100).then(values => this.listModel.appendValues(values));
+      this.watchTask(this.loadNext(0, 100).then(values => this.listModel.appendValues(values)));
       this.holder.notify();
     });
+    this.watchTask(task);
   };
 }
