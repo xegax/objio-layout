@@ -1,14 +1,31 @@
 import * as React from 'react';
-import { DocLayout as Base, DataSourceHolder } from '../server/layout';
 import { LayoutModel, clone, LayoutCont, LayoutItem } from 'ts-react-ui/model/layout';
 import { OBJIOItem } from 'objio';
-import { LayoutContView, Owner } from '../view/layout-cont-view';
 import { ObjectBase } from 'objio-object/client/object-base';
 import { select } from 'ts-react-ui/prompt';
+import { ViewFactory } from 'objio-object/common/view-factory';
+import { ObjHolderView } from '../view/obj-holder-view';
+import { PropSheet, PropItem, PropsGroup, TextPropItem } from 'ts-react-ui/prop-sheet';
+import { AppComponent } from 'ts-react-ui/app-comp-layout';
+import {
+  DocLayoutBase,
+  ObjectHolderBase,
+  ObjectHolderBaseArgs
+} from '../base/layout';
 
-export class DocLayout extends Base {
+export {
+  ObjectHolderBaseArgs,
+  ObjectHolderBase
+}
+
+export class DocLayout extends DocLayoutBase {
   private model = new LayoutModel();
-  private edit: DataSourceHolder;
+  private static viewFactory = new ViewFactory(); 
+  private select: ObjectHolderBase;
+
+  static getViewFactory(): ViewFactory {
+    return this.viewFactory;
+  }
 
   constructor() {
     super();
@@ -19,7 +36,7 @@ export class DocLayout extends Base {
         this.model.delayedNotify();
       },
       onLoad: () => {
-        this.objects.holder.addEventHandler({
+        this.holders.holder.addEventHandler({
           onObjChange: () => {
             this.updateLayoutMap();
             this.model.delayedNotify();
@@ -44,31 +61,41 @@ export class DocLayout extends Base {
   onDrop = (item: LayoutItem): Promise<LayoutItem> => {
     return (
       this.holder.getObject(item.id)
-      .then((obj: ObjectBase) => {
-        const views = DataSourceHolder.findAllViews( OBJIOItem.getClass(obj) );
+      .then((draggedObj: ObjectBase) => {
+        const objViews = DocLayout.viewFactory.findAll({
+          classObj: OBJIOItem.getClass(draggedObj)
+        });
 
-        if (views.length == 1)
-          return views[0].object({source: obj, layout: this, viewType: views[0].viewType});
+        if (objViews.length == 1)
+          return Promise.resolve({ draggedObj, factItem: objViews[0] });
 
         return select({
-          items: views.map(view => view.viewType)
-        }).then(view => {
-          return (
-              views.find(v => v.viewType == view)
-              .object({source: obj, layout: this, viewType: view})
-          );
-        });
+          items: objViews.map(view => view.viewType)
+        }).then(view => (
+          {
+            draggedObj,
+            factItem: objViews.find(v => v.viewType == view)
+          }
+        ));
       })
-      .then((holder: DataSourceHolder) => {
+      .then(res => {
+        const args: ObjectHolderBaseArgs = {
+          obj: res.draggedObj,
+          view: res.factItem.viewType
+        };
+
+        return res.factItem.createObject(args);
+      })
+      .then((holder: ObjectHolderBase) => {
         return (
           this.holder.createObject(holder)
           .then(() => holder)
         );
       })
-      .then((holder: DataSourceHolder) => {
-        this.objects.push(holder);
+      .then((holder: ObjectHolderBase) => {
+        this.holders.push(holder);
 
-        this.objects.holder.save();
+        this.holders.holder.save();
         this.layout = clone(this.model.getLayout()) as LayoutCont;
         this.updateLayoutMap();
         this.holder.save();
@@ -77,67 +104,112 @@ export class DocLayout extends Base {
     );
   }
 
+  notifyView = () => {
+    this.holder.delayedNotify();
+  }
+
   updateLayoutMap() {
     const map: {[id: string]: JSX.Element} = {};
-    this.objects.getArray().forEach((obj: DataSourceHolder) => {
-      const id = obj.holder.getID();
-      const jsx: JSX.Element = (obj.getView() || (
-        <React.Fragment>
-          <div>object {this.holder.getID()}</div>
-          <div>data object {obj.get().holder.getID()}</div>
-          <div>type {OBJIOItem.getClass(obj.get()).TYPE_ID}</div>
-        </React.Fragment>
-      ));
+    this.holders.getArray().forEach((holder: ObjectHolderBase) => {
+      holder.holder.unsubscribe(this.notifyView);
+      holder.holder.subscribe(this.notifyView);
 
-      const owner: Owner = {
-        isTitleEdit: () => this.edit == obj,
-        editTitle: () => {
-          this.edit && this.edit.holder.delayedNotify();
-          this.edit = obj;
-          this.edit.holder.delayedNotify();
-        },
-        setTitle: (name: string) => {
-          if (!this.edit)
-            return;
+      const id = holder.holder.getID();
+      const jsx: JSX.Element = DocLayout.viewFactory.getView({
+        classObj: OBJIOItem.getClass(holder.getObject()),
+        viewType: holder.getView(),
+        props: { model: holder }
+      });
 
-          const edit = this.edit;
-          this.edit = null;
-
-          edit.setName(name);
-          edit.holder.save();
-          edit.holder.delayedNotify();
-        },
-        onRemove: () => {
-          this.model.remove(id);
-          this.layout = clone( this.model.getLayout() ) as LayoutCont;
-          this.holder.save();
-          const idx = this.objects.find(obj => obj.holder.getID() == id);
-          this.objects.remove(idx);
-          this.objects.holder.save();
-        }
-      };
       map[id] = (
-        <LayoutContView layoutId={id} model={obj} owner={owner}>
+        <ObjHolderView layoutId={id} model={holder} docLayout={this}>
           {jsx}
-        </LayoutContView>
+        </ObjHolderView>
       );
     });
+
     this.model.setMap(map);
   }
 
+  setSelect(holder: ObjectHolderBase) {
+    if (this.select == holder)
+      return;
+
+    this.select = holder;
+    this.holder.delayedNotify();
+  }
+
+  getSelect(): ObjectHolderBase {
+    return this.select;
+  }
+
   notifyObjects(notifyType?: string) {
-    this.objects.getArray().forEach(obj => {
+    this.holders.getArray().forEach(obj => {
       obj.holder.notify(notifyType);
     });
   }
 
   delayedNotifyObjects(notifyType?: string) {
-    this.objects.getArray().forEach(obj => {
+    this.holders.getArray().forEach(obj => {
       obj.holder.delayedNotify(notifyType ? { type: notifyType } : null);
     });
   }
 
   getLayout(): LayoutModel {
     return this.model;
+  }
+
+  remove(holder: ObjectHolderBase) {
+    if (holder == this.select)
+      this.select = null;
+
+    const id = holder.holder.getID();
+    this.model.remove(holder.holder.getID());
+    this.layout = clone( this.model.getLayout() ) as LayoutCont;
+    this.holder.save();
+    const idx = this.holders.find(obj => obj.holder.getID() == id);
+    this.holders.remove(idx);
+    this.holders.holder.save();
+  }
+
+  renderConfig() {
+    return (
+      <PropsGroup label='layout'>
+        <PropItem label='objects' value={this.holders.getLength()}/>
+      </PropsGroup>
+    );
+  }
+
+  renderSelectCommon() {
+    if (!this.select)
+      return null;
+
+    return (
+      <PropsGroup label='select'>
+        <TextPropItem
+          label='name'
+          value={this.select.getName()}
+          onChanged={name => {
+            this.select.setName(name);
+          }}
+        />
+        <PropItem label='holder id' value={this.select.holder.getID()}/>
+        <PropItem label='holder version' value={this.select.holder.getVersion()}/>
+        <PropItem label='object id' value={this.select.getObject().holder.getID()}/>
+        <PropItem label='object version' value={this.select.getObject().holder.getVersion()}/>
+      </PropsGroup>
+    );
+  }
+
+  getAppComponents() {
+    return [
+      <AppComponent id='config' faIcon='fa fa-sliders'>
+        <PropSheet>
+          {this.renderConfig()}
+          {this.renderSelectCommon()}
+          {this.select && this.select.getProps()}
+        </PropSheet>
+      </AppComponent>
+    ];
   }
 }

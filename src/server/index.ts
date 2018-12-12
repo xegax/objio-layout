@@ -1,24 +1,15 @@
 import { OBJIOItemClass } from 'objio';
-import { DocLayout2, ObjectHolderBase } from './layout2';
-import { DocLayout, DataSourceHolder } from './layout';
-import { CategoryFilter } from './category-filter';
-import { DrillDownTable } from './drilldown-table';
-import { RangeFilter } from './range-filter';
-import { SelectDetails } from './select-details';
-import { TagFilter } from './tag-filter';
+import { DocLayout, ObjectHolderBase } from './layout';
 import { DrillDownTable2 } from './drilldown-table';
+import { CategoryFilter2 } from './category-filter';
+import { RangeFilter2 } from './range-filter';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
     DocLayout,
-    DocLayout2,
-    DataSourceHolder,
     ObjectHolderBase,
-    CategoryFilter,
-    DrillDownTable,
+    CategoryFilter2,
     DrillDownTable2,
-    RangeFilter,
-    SelectDetails,
-    TagFilter
+    RangeFilter2
   ];
 }

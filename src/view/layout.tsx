@@ -1,18 +1,11 @@
 import * as React from 'react';
 import { Layout } from 'ts-react-ui/layout';
-import { DocLayout } from '../client/layout';
-import { DataSourceHolder,
-  ViewFactory,
-  FactoryItem,
-  LayoutItemViewProps
-} from '../server/layout';
+import { DocLayout, ObjectHolderBase, ObjectHolderBaseArgs } from '../client/layout';
 
 export {
   DocLayout,
-  DataSourceHolder,
-  ViewFactory,
-  FactoryItem,
-  LayoutItemViewProps
+  ObjectHolderBase,
+  ObjectHolderBaseArgs
 };
 
 export interface Props {
@@ -20,21 +13,16 @@ export interface Props {
 }
 
 export class DocLayoutView extends React.Component<Props, {}> {
-  private mount: boolean = false;
-
   subscriber = () => {
-    if (this.mount)
-      this.setState({});
+    this.setState({});
   }
 
   componentDidMount() {
-    this.mount = true;
     this.props.model.updateLayoutMap();
     this.props.model.holder.subscribe(this.subscriber);
   }
 
   componentWillUnmount() {
-    this.mount = false;
     this.props.model.holder.unsubscribe(this.subscriber);
   }
 

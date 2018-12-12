@@ -1,89 +1,134 @@
 import * as React from 'react';
-import { DrillDownTable as Base } from '../server/drilldown-table';
-import { DocTable } from 'objio-object/client/doc-table';
-import {
-  ColumnAttr,
-  LoadCellsArgs,
-  SubtableAttrs,
-  SortPair,
-  Condition,
-  ValueCond
-} from 'objio-object/client/table';
+import { DrillDownTableBase } from '../base/drilldown-table';
 import { RenderListModel } from 'ts-react-ui/list';
 import { RenderArgs, ListColumn } from 'ts-react-ui/model/list';
 import { Cancelable, ExtPromise } from 'objio';
-import { DocLayout } from './layout';
-import { DataSourceHolderArgs } from '../server/layout';
-import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
-import { CondHolder, EventType, CondHolderOwner } from './cond-holder';
-import { SelectProv, SelectProvOwner, EventTypes } from './common';
+import {
+  LoadCellsArgs,
+  ColumnAttr,
+  SubtableAttrs
+} from 'objio-object/client/table';
+import { DocTable } from 'objio-object/client/doc-table';
+import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+import { Tabs, Tab } from 'ts-react-ui/tabs';
+import { ListView } from 'ts-react-ui/list-view';
 
-export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHolderOwner, SelectProvOwner {
-  private render = new RenderListModel(0, 20);
+export class DrillDownTable extends DrillDownTableBase<DocTable> {
+  private tableRender = new RenderListModel(0, 20);
   private lastLoadTimer: Cancelable;
   private maxTimeBetweenRequests: number = 300;
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
-  private colsFromSrv = Array<ColumnAttr>();
-  private rowsNum: number = 0;
-  private sort: SortPair;
-  private cond = new CondHolder();
-  private searchText: string;
+  private colsFromServer = Array<ColumnAttr>();
 
-  constructor(args: DataSourceHolderArgs<DocTable, DocLayout>) {
+  constructor(args) {
     super(args);
 
-    this.render.setHandler({
-      loadItems: (first, count) => {
-        if (this.lastLoadTimer) {
-          this.lastLoadTimer.cancel();
-          this.lastLoadTimer = null;
-        }
-
-        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
-        return this.lastLoadTimer.then(() => {
-          this.lastLoadTimer = null;
-
-          const args: LoadCellsArgs = { first, count };
-          if (this.subtable)
-            args.table = this.subtable;
-
-          return this.source.getTableRef().loadCells(args);
-        });
-      }
+    this.tableRender.setHandler({
+      loadItems: this.loadItems
     });
 
     this.holder.addEventHandler({
-      onLoad: this.onInit,
-      onCreate: this.onInit,
-      onObjChange: this.updateTable
+      onLoad: this.onLoad,
+      onCreate: this.onCreate,
+      onObjChange: this.onObjChange
     });
 
-    this.holder.subscribe(this.requestTable, EventType.change);
-    this.render.subscribe(() => {
+    //this.holder.subscribe(this.requestTable, EventType.change);
+    /*this.tableRender.subscribe(() => {
       this.layout.delayedNotifyObjects(EventTypes.selProvSelection);
-    }, 'select-row');
+    }, 'select-row');*/
   }
 
-  isInvokesInProgress(): boolean {
-    return this.source.getTableRef().holder.getInvokesInProgress() > 0;
+  getInvokesInProgress() {
+    return super.getInvokesInProgress() + this.obj.getTableRef().getInvokesInProgress();
   }
 
-  getSelProv(): SelectProv {
+  getTableRender() {
+    return this.tableRender;
+  }
+
+  setSortColumn(column: string) {
+    const dir = this.sort ? this.sort.dir : 'asc';
+    super.setSort({ column, dir });
+    this.onObjChange();
+  }
+
+  setSortDir(dir: string) {
+    if (!this.sort)
+      return;
+
+    const column = this.sort.column;
+    super.setSort({ column, dir: dir as any });
+    this.onObjChange();
+  }
+
+  getColumnItem = (col: ColumnAttr) => {
     return {
-      getSelection: (): Array<string> => {
-        const sel = this.render.getSel();
-        if (!sel.length)
-          return [];
-
-        const row = this.render.getItems(+sel[sel.length - 1], 1)[0];
-        return [ row[this.colsFromSrv.findIndex(col => col.name == this.idColumn)] ];
+      value: col.name,
+      render: () => {
+        return (
+          <>
+            <i
+              style={{ marginRight: 5 }}
+              className={this.isColumnShown(col.name) ? 'fa fa-check-square-o' : 'fa fa-square-o'}
+              onClick={e => {
+                if (e.ctrlKey)
+                  this.setShowOneColumn(col.name);
+                else
+                  this.toggleColumn(col.name);
+              }}
+            />
+            {col.name}
+          </>
+        );
       }
     };
   }
 
-  onInit = () => {
-    this.source.getTableRef().holder.subscribe(() => {
+  getProps() {
+    return (
+      <PropsGroup label='table'>
+        <Tabs defaultSelect='data' key={this.holder.getID()}>
+          <Tab id='data' label='data'>
+            <PropItem label='rows' value={this.tableRender.getItemsCount()}/>
+            <PropItem label='columns' value={this.colsToShow.length || this.obj.getAllColumns().length}/>
+            <PropItem inline={false}>
+              <ListView
+                itemsPerPage={7}
+                style={{flexGrow: 1, textAlign: 'left' }}
+                values={this.obj.getAllColumns().map(this.getColumnItem)}
+              />
+            </PropItem>
+            <DropDownPropItem
+              label='sort'
+              value={this.sort ? { value: this.sort.column } : null }
+              values={this.obj.getAllColumns().map(col => {
+                return {
+                  value: col.name
+                };
+              })}
+              onSelect={value => this.setSortColumn( value.value )}
+            />
+            <DropDownPropItem
+              label='sort direction'
+              disabled={!this.sort}
+              value={this.sort ? { value: this.sort.dir } : null }
+              values={[
+                { value: 'asc', render: 'Ascending' },
+                { value: 'desc', render: 'Descending' }
+              ]}
+              onSelect={value => this.setSortDir( value.value )}
+            />
+          </Tab>
+        </Tabs>
+      </PropsGroup>
+    );
+  }
+
+  private onLoad = () => {
+    this.obj.getTableRef().holder.subscribe(() => {
+      console.log('invoke in progress', this.getInvokesInProgress());
       this.holder.delayedNotify();
     }, 'invokesInProgress');
 
@@ -91,92 +136,94 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
     return Promise.resolve();
   }
 
-  getCondHolder() {
-    return this.cond;
+  private onCreate = () => {
+    this.obj.getTableRef().holder.subscribe(() => {
+      this.holder.delayedNotify();
+    }, 'invokesInProgress');
+
+    this.colsToShow = this.obj.getAllColumns().map(col => col.name);
+    this.holder.save();
+    this.updateTable();
+    return Promise.resolve();
   }
 
-  getSearchText() {
-    return this.searchText;
+  private onObjChange = () => {
+    this.updateTable();
   }
 
-  setSearchText(text: string) {
-    this.searchText = text;
-    this.requestTable();
+  setColumnToShow(col: string, show: boolean) {
+    super.setColumnToShow(col, show);
+    this.onObjChange();
   }
 
-  requestTable = () => {
-    const args: Partial<SubtableAttrs> = {};
-    let filter: Condition = this.cond.getMergedCondition(this, this.layout.getObjects().getArray());
-    if (!filter && this.searchText) {
-      filter = {
-        column: this.searchColumn || this.getColumns()[0],
-        value: this.searchText,
-        like: true
-      } as ValueCond;
+  private loadItems = (first: number, count: number) => {
+    if (this.lastLoadTimer) {
+      this.lastLoadTimer.cancel();
+      this.lastLoadTimer = null;
     }
-    
-    if (filter)
-      args.filter = filter;
 
-    if (this.sort)
-      args.sort = [this.sort];
+    this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
+    return this.lastLoadTimer.then(() => {
+      this.lastLoadTimer = null;
 
-    if (this.colsToShow.length)
-      args.cols = this.colsToShow.slice();
+      const args: LoadCellsArgs = { first, count };
+      if (this.subtable)
+        args.table = this.subtable;
 
-    // keep idColumn
-    if (this.idColumn && args.cols && args.cols.indexOf(this.idColumn) == -1)
-      args.cols.splice(0, 0, this.idColumn);
-
-    this.source.getTableRef().createSubtable(args)
-    .then(res => {
-      this.colsFromSrv = res.columns.slice();
-      this.colsToRender = res.columns.slice();
-      // if idColumn has to be hidden
-      if (this.colsToShow.length && this.idColumn && this.colsToShow.indexOf(this.idColumn) == -1) {
-        this.colsToRender = this.colsToRender.filter(col => col.name != this.idColumn);
-      }
-
-      this.subtable = res.subtable;
-      this.rowsNum = res.rowsNum;
-      this.updateRenderModel();
-      this.render.reload();
-      this.holder.notify();
+      return this.obj.getTableRef().loadCells(args);
     });
-  };
+  }
 
-  updateTable = () => {
-    this.colsToRender = this.source.getAllColumns();
+  private getColsToRequest(): Array<string> | null {
+    if (this.colsToShow.length == 0)
+      return null;
+
+    return this.obj.getAllColumns()
+      .map(col => col.name)
+      .filter(col => this.colsToShow.indexOf(col) != -1);
+  }
+
+  private getColsToShow(): Array<ColumnAttr> {
+    if (this.colsToShow.length == 0)
+      return this.colsFromServer.slice();
+
+    return this.colsFromServer.filter(col => {
+      return this.colsToShow.indexOf(col.name) != -1;
+    });
+  }
+
+  private updateTable = () => {
+    this.colsToRender = this.obj.getAllColumns();
     if (this.colsToShow.length) {
-      this.colsToRender = this.colsToRender.filter(col => {
+      this.colsToRender = this.colsToRender
+      .filter(col => {
         return this.colsToShow.indexOf(col.name) != -1;
       });
     }
 
-    this.rowsNum = this.source.getTotalRowsNum();
-    this.requestTable();
+    this.updateTableDataImpl();
   }
 
-  getRender() {
-    return this.render;
-  }
+  private updateTableDataImpl = () => {
+    const args: Partial<SubtableAttrs> = {};
+    args.cols = this.getColsToRequest();
+    if (this.sort)
+      args.sort = [ this.sort ];
 
-  getColumns(): Array<ColumnAttr> {
-    return this.source.getAllColumns();
-  }
+    this.obj.getTableRef().createSubtable(args)
+    .then(res => {
+      this.colsFromServer = res.columns.slice();
+      this.subtable = res.subtable;
 
-  getColumnsToRender() {
-    return this.colsToRender;
-  }
+      this.updateTableRender(res.rowsNum, this.getColsToShow());
+      this.holder.notify();
+    });
+  };
 
-  getTotalRows() {
-    return this.rowsNum;
-  }
-
-  updateRenderModel() {
-    this.render.setItemsCount(this.rowsNum);
-    this.render.setColumns(this.colsToRender.map((col, c) => {
-      c = this.colsFromSrv.findIndex(srvCol => srvCol.name == col.name);
+  private updateTableRender(rowsNum: number, cols: Array<ColumnAttr>) {
+    this.tableRender.setItemsCount(rowsNum);
+    this.tableRender.setColumns( cols.map((col, c) => {
+      c = this.colsFromServer.findIndex(srvCol => srvCol.name == col.name);
       return {
         name: col.name,
         render: (args: RenderArgs<Array<string>>) => {
@@ -184,76 +231,13 @@ export class DrillDownTable extends Base<DocTable, DocLayout> implements CondHol
         },
         renderHeader: (jsx: JSX.Element, col: ListColumn) => {
           return (
-            <div
-              onContextMenu={evt => this.onCtxMenu(evt, col)}
-              onClick={() => this.toggleSort(col.name)}
-            >
+            <div>
               {jsx}
             </div>
           );
         }
       };
-    }));
-  }
-
-  onCtxMenu = (evt: React.MouseEvent, col: ListColumn) => {
-    evt.preventDefault();
-    evt.stopPropagation();
-
-    ContextMenu.show((
-      <Menu>
-        <MenuItem text='hide column' onClick={() => this.hideColumn(col.name)}/>
-        <MenuItem text='show all' onClick={() => this.showAllColumns()}/>
-      </Menu>
-    ), {left: evt.pageX, top: evt.pageY});
-  }
-
-  hideColumn(col: string) {
-    if (this.colsToShow.length == 0)
-      this.colsToShow = this.source.getAllColumns().map(col => col.name);
-
-    this.colsToShow.splice(this.colsToShow.indexOf(col), 1);
-    this.holder.save();
-    this.requestTable();
-  }
-
-  showAllColumns() {
-    this.colsToShow = [];
-    this.holder.save();
-    this.requestTable();
-  }
-
-  applySQLCond(sql: string): void {
-    const args: Partial<SubtableAttrs> = { filter: sql };
-
-    if (this.sort)
-      args.sort = [this.sort];
-
-    if (this.colsToShow.length)
-      args.cols = this.colsToShow;
-
-    this.source.getTableRef().createSubtable(args)
-    .then(res => {
-      this.colsToRender = res.columns;
-      this.subtable = res.subtable;
-      this.rowsNum = res.rowsNum;
-      this.updateRenderModel();
-      this.render.reload();
-      this.holder.notify();
-    });
-  }
-
-  setSort(column: string, dir: 'asc' | 'desc') {
-    this.sort = { column, dir };
-    this.requestTable();
-  }
-
-  toggleSort(column: string) {
-    if (this.sort && this.sort.column == column) {
-      this.sort.dir = this.sort.dir == 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sort = { column, dir: 'asc' };
-    }
-    this.requestTable();
+    }) );
+    this.tableRender.reload();
   }
 }

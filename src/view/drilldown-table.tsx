@@ -15,9 +15,7 @@ export interface Props {
   model: DrillDownTable;
 }
 
-export class DrillDownTableView extends React.Component<Props> {
-  private search = React.createRef<HTMLInputElement>();
-
+export class DrillDownTable2View extends React.Component<Props> {
   subscriber = () => {
     this.setState({});
   }
@@ -30,97 +28,17 @@ export class DrillDownTableView extends React.Component<Props> {
     this.props.model.holder.unsubscribe(this.subscriber);
   }
 
-  renderIdColumnSelect(): JSX.Element {
-    const model = this.props.model;
-    if (!model.isEdit())
-      return null;
-
-    const value = model.getIdColumn();
-    return (
-      <div style={{display: 'flex'}}>id column: 
-        <select
-          style={{flexGrow: 1}}
-          value={value}
-          onChange={e => {
-            model.setIdColumn(e.currentTarget.value);
-          }}
-        >
-          {model.getColumns().map((col, i) => {
-            return <option key={i} value={col.name}>{col.name}</option>;
-          })}
-        </select>
-      </div>
-    );
-  }
-
-  renderTableName(): JSX.Element {
-    const model = this.props.model;
-    if (!model.isEdit())
-      return null;
-
-    return (
-      <div style={{display: 'flex'}}>
-        table: {model.get().getTableRef().getTable()}
-      </div>
-    );
-  }
-
-  renderSearch(): JSX.Element {
-    const model = this.props.model;
-    const value = model.getSearchColumn();
-    return (
-      <div style={{display: 'flex'}}>
-        <button
-          onClick={() => {
-            model.setSearchText(this.search.current.value);
-          }}
-        >
-          <i
-            className='fa fa-search'
-            style={{flexGrow: 0}}
-          />
-        </button>
-        <input
-          ref={this.search}
-          defaultValue={model.getSearchText()}
-          style={{flexGrow: 1}}
-          onKeyDown={e => {
-            if (e.keyCode == 13)
-              model.setSearchText(e.currentTarget.value);
-          }}
-        /> 
-        <select
-          style={{flexGrow: 0}}
-          value={value}
-          onChange={e => {
-            model.setSearchColumn(e.currentTarget.value);
-          }}
-        >
-          {model.getColumns().map((col, i) => {
-            return <option key={i} value={col.name}>{col.name}</option>;
-          })}
-        </select>
-      </div>
-    );
-  }
-
   renderData(): JSX.Element {
     const model = this.props.model;
-    const state = model.get();
-    if (!state.isStatusValid()) {
-      return <React.Fragment>in progress: {state.getProgress()}</React.Fragment>;
+    const obj = model.getObject();
+    if (!obj.isStatusValid()) {
+      return <>in progress: {obj.getProgress()}</>;
     }
 
     return (
-      <React.Fragment>
-        {this.renderTableName()}
-        {this.renderIdColumnSelect()}
-        {this.renderSearch()}
-        <FitToParent wrapToFlex>
-          <List border model={model.getRender()}/>
-        </FitToParent>
-        <div>rows: {model.getTotalRows()}</div>
-      </React.Fragment>
+      <FitToParent wrapToFlex>
+        <List border model={model.getTableRender()}/>
+      </FitToParent>
     );
   }
 

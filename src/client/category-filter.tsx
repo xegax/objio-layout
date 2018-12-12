@@ -1,68 +1,65 @@
 import * as React from 'react';
-import { CategoryFilter as Base, SortType, SortDir } from '../server/category-filter';
+import { CategoryFilterBase, SortType, SortDir } from '../base/category-filter';
 import { DocTable } from 'objio-object/client/doc-table';
-import { ColumnAttr, LoadCellsArgs, Condition } from 'objio-object/client/table';
-import { DocLayout } from './layout';
-import { CondHolder, CondHolderOwner } from './cond-holder';
-import { OBJIOItem } from 'objio';
-import { List2Item } from 'ts-react-ui/list2';
-import { DropDownListModel } from 'ts-react-ui/drop-down-list';
+import { ColumnAttr, LoadCellsArgs, Condition, SubtableAttrs } from 'objio-object/client/table';
+import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+import { Tabs, Tab } from 'ts-react-ui/tabs';
+import { ListViewLoadableModel } from 'ts-react-ui/list-view-loadable';
 
-function throttling(f: () => void, ms: number): () => void {
-  let t = null;
-  return () => {
-    if (t != null)
-      return;
+const sortTypeArr = [
+  { value: 'value', render: 'Value' },
+  { value: 'count', render: 'Count' }
+];
 
-    t = setTimeout(() => {
-      t = null;
-      f();
-    }, ms);
-  };
-}
+const sortDirArr = [
+  { value: 'natural', render: 'Natural' },
+  { value: 'asc', render: 'Ascending' },
+  { value: 'desc', render: 'Descending' }
+];
 
-export type RowData = { row: Array<string> };
-export type Row = List2Item<RowData>;
+export class CategoryFilter extends CategoryFilterBase<DocTable> {
+  protected subtable: string;
+  protected rowsNum: number = 0;
+  protected listModel = new ListViewLoadableModel();
+  private dataKey: number = 0;
 
-export { SortType, SortDir };
+  constructor(args) {
+    super(args);
 
-const classes = {
-  excluded: 'excluded'
-};
-
-export interface CategoryFilterOwner extends OBJIOItem {
-  getColumn(): string;
-  setCondition(cond: Condition): void;
-  get(): DocTable;
-
-  getSortType(): SortType;
-  setSortType(type: SortType): void;
-
-  getSortDir(): SortDir;
-  setSortDir(dir: SortDir): void;
-}
-
-export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHolderOwner, CategoryFilterOwner {
-  private condHolder = new CondHolder();
-  private impl = new CategoryFilterImpl(this);
-
-  isInvokesInProgress(): boolean {
-    return this.source.getTableRef().holder.getInvokesInProgress() > 0;
+    this.holder.addEventHandler({
+      onLoad: this.onLoad,
+      onCreate: this.onCreate,
+      onObjChange: this.onChange
+    });
   }
 
-  getCondHolder(): CondHolder {
-    return this.condHolder;
+  onLoad = () => {
+    this.updateTable();
+    return Promise.resolve();
   }
 
-  getColumn(): string {
-    return this.column || this.source.getAllColumns()[0].name;
+  onCreate = () => {
+    this.updateTable();
+    return Promise.resolve();
   }
 
-  setColumn(name: string): boolean {
-    if (!super.setColumn(name))
+  onChange = () => {
+    this.updateTable();
+  }
+
+  getRowsNum() {
+    return this.rowsNum;
+  }
+
+  getTotalRowsNum() {
+    return this.obj.getTotalRowsNum();
+  }
+
+  setColumn(column: string) {
+    if (!super.setColumn(column))
       return false;
-
-    this.impl.updateSubtable();
+    
+    this.updateTable();
     return true;
   }
 
@@ -70,7 +67,7 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
     if (!super.setSortType(type))
       return false;
 
-    this.impl.updateSubtable();
+    this.updateTable();
     return true;
   }
 
@@ -78,236 +75,93 @@ export class CategoryFilter extends Base<DocTable, DocLayout> implements CondHol
     if (!super.setSortDir(dir))
       return false;
 
-    this.impl.updateSubtable();
+    this.updateTable();
     return true;
   }
 
-  getColumns(): Array<ColumnAttr> {
-    return this.source.getAllColumns();
+  getListModel() {
+    return this.listModel;
   }
 
-  setCondition(cond: Condition): void {
-    this.condHolder.setCondition(this.source, cond, this.layout.getObjects().getArray(), this);
-  }
-
-  getTotalRows(): number {
-    return this.impl.getTotalRows();
-  }
-
-  getRender() {
-    return this.impl.getRender();
-  }
-
-  getSourceTotalRows(): number {
-    return this.source.getTotalRowsNum();
-  }
-
-  getTools(): Array<JSX.Element> {
-    const classes = {
-      'AscAlpha': 'fa fa-sort-alpha-asc',
-      'DescAlpha': 'fa fa-sort-alpha-desc',
-      'AscCount': 'fa fa-sort-amount-asc',
-      'DescCount': 'fa fa-sort-amount-desc'
-    };
-
-    return [
-      <i
-        className='fa fa-sort'
-        onClick={e => {
-          this.setSortDir(this.getSortDir() == 'Asc' ? 'Desc' : 'Asc');
-          e.preventDefault();
-        }}
-      />,
-      <i
-        className={classes[this.getSortDir() + this.getSortType()]}
-        onClick={e => {
-          this.setSortType(this.getSortType() == 'Alpha' ? 'Count' : 'Alpha');
-          e.preventDefault();
-        }}
-      />
-    ];
-  }
-
-  getName(): string | JSX.Element {
-    if (this.isEdit())
-      return super.getName();
-
-    return `${super.getName()} ( ${this.getTotalRows()} )`;
-  }
-
-  resetSelect() {
-    this.impl.getRender().clearSelect();
-    this.impl.getRender().setFilter('');
-  }
-
-  loadNext(first: number, count: number): Promise<Array<{value: string; render?: string}>> {
+  loadNext(first: number, count: number) {
     const args: LoadCellsArgs = { first, count };
-    if (this.impl.subtable)
-      args.table = this.impl.subtable;
+    if (this.subtable)
+      args.table = this.subtable;
 
     return (
-      this.get().getTableRef().loadCells(args)
-    ).then((rows: Array< Array<string> > ) => {
-      return rows.map((row: Array<string>, i) => {
-        return {
-          value: row[0],
-          render: row[0]
-        };
-      });
-    });
-  }
-}
-
-export class CategoryFilterImpl<TCategoryFilterOwner extends CategoryFilterOwner = CategoryFilterOwner> {
-  protected owner: TCategoryFilterOwner;
-  private render = new DropDownListModel<RowData>();
-  subtable: string;
-  private colsToRender = Array<ColumnAttr>();
-  private rowsNum: number = 0;
-  private sel = Array<string>();
-  private excludeSel = new Set<string>();
-
-  constructor(object: TCategoryFilterOwner) {
-    this.owner = object;
-
-    this.render.setHandler({
-      loadNext: (first: number, count: number): Promise< Array<Row> > => {
-        const args: LoadCellsArgs = { first, count };
-        if (this.subtable)
-          args.table = this.subtable;
-
-        return (
-          this.getSource().getTableRef().loadCells(args)
-        ).then((rows: Array< Array<string> > ) => {
-          return rows.map((row: Array<string>, i) => {
-            return {
-              id: row[0],
-              label: row[0],
-              data: { row }
-            } as Row;
-          });
+      this.getObject().getTableRef().loadCells(args)
+      .then((rows: Array< Array<string> > ) => {
+        return rows.map((row: Array<string>, i) => {
+          return {
+            value: row[0],
+            render: (
+              <div title={row[1]}>
+                {row[0] == null || row[0].trim() == '' ? <span style={{visibility: 'hidden'}}>?</span> : row[0]}
+              </div>
+            )
+          };
         });
-      },
-      render: (item: Row, idx: number): JSX.Element => {
-        const rows = this.getSource().getTotalRowsNum();
-        const perc = +item.data.row[1] * 100 / rows;
-        return (
-          <div key={idx} title={`${item.data.row[1]} (${Math.round(perc * 100) / 100}%)`}>
-            <div style={{width: perc + '%', backgroundColor: 'lightgreen'}}>
-              {item.data.row[0] || '$missing$'}
-            </div>
-          </div>
-        );
-      }
-    });
-
-    this.owner.holder.addEventHandler({
-      onLoad: this.onInit,
-      onCreate: this.onInit,
-      onObjChange: this.updateSubtable
-    });
+      })
+    );
   }
 
-  getSource(): DocTable {
-    return this.owner.get();
+  getProps() {
+    return (
+      <PropsGroup label='table' key={this.holder.getID()}>
+        <Tabs defaultSelect='data'>
+          <Tab id='data' label='data'>
+            <DropDownPropItem
+              label='column'
+              value={this.column ? { value: this.column } : null}
+              values={this.obj.getAllColumns().map(col => {
+                return {
+                  value: col.name
+                };
+              })}
+              onSelect={value => this.setColumn( value.value )}
+            />
+            <DropDownPropItem
+              label='sort'
+              disabled={this.sortDir == 'natural'}
+              value={{ value: this.sortType }}
+              values={sortTypeArr}
+              onSelect={value => this.setSortType(value.value as any)}
+            />
+            <DropDownPropItem
+              label='sort direction'
+              value={{ value: this.sortDir }}
+              values={sortDirArr}
+              onSelect={value => this.setSortDir(value.value as any)}
+            />
+          </Tab>
+        </Tabs>
+      </PropsGroup>
+    );
   }
 
-  updateCondition() {
-    this.sel = this.render.getSelectedItems().map(item => item.id);
-
-    const column = this.owner.getColumn();
-    if (this.sel.length + this.excludeSel.size == 0) {
-      this.setCondition(null);
-    } else if (this.sel.length == 1 && this.excludeSel.size == 0) {
-      this.setCondition({ column, value: this.sel[0] });
-    } else if (this.sel.length == 0 && this.excludeSel.size == 1) {
-      this.setCondition({ column, inverse: true, value: Array.from(this.excludeSel)[0]});
-    } else {
-      const cond: Condition = { op: 'or', values: this.sel.map(value => ({ column, value }))};
-      const exclude: Condition = {
-        op: 'and',
-        values: Array.from(this.excludeSel).map(value => {
-          return { column, inverse: true, value };
-        })
-      };
-
-      if (this.excludeSel.size == 0) {
-        this.setCondition(cond);
-      } else if (this.sel.length == 0) {
-        this.setCondition(exclude);
-      } else {
-        this.setCondition({ op: 'and', values: [ cond, exclude ] } as Condition);
-      }
-    }
+  getDataKey() {
+    return this.dataKey;
   }
 
-  setCondition(cond: Condition): void {
-    this.owner.setCondition(cond);
-  }
+  private updateTable = () => {
+    if (!this.column)
+      return;
 
-  onInit = () => {
-    this.updateSubtable();
-    this.getSource().getTableRef().holder.subscribe(() => {
-      this.owner.holder.delayedNotify();
-    }, 'invokesInProgress');
+    const column = this.sortType == 'value' ? this.column : 'count';
+    const dir = this.sortDir == 'asc' ? 'asc' : 'desc';
+    const args: Partial<SubtableAttrs> = {
+      distinct: { column: this.column },
+      sort: this.sortDir == 'natural' ? null : [{ column, dir }]
+    };
 
-    this.render.subscribe(() => {
-      this.updateCondition();
-      this.render.setFilter('');
-    }, 'select');
-
-    this.render.setFilterable(true);
-    this.render.subscribe(throttling(() => {
-      this.updateSubtable();
-    }, 2000), 'filter');
-
-    return Promise.resolve();
-  }
-
-  updateSubtable = () => {
-    const filter = this.render.getFilter();
-    const column = this.owner.getSortType() == 'Alpha' ? this.owner.getColumn() : 'count';
-    const dir = this.owner.getSortDir() == 'Asc' ? 'asc' : 'desc';
-    const like = true;
-    return this.owner.get().getTableRef().createSubtable({
-      filter: filter ? { value: filter, column: this.owner.getColumn(), like } : null,
-      distinct: { column: this.owner.getColumn() },
-      sort: [{ column, dir }]
-    }).then(res => {
-      this.colsToRender = res.columns;
-      this.subtable = res.subtable;
+    this.obj.getTableRef().createSubtable(args)
+    .then(res => {
+      this.dataKey++;
       this.rowsNum = res.rowsNum;
-    }).then(() => {
-      this.sel = [];
-      this.render.clear({ reload: true });
-      this.owner.holder.notify();
+      this.subtable = res.subtable;
+      this.listModel.setValues([]);
+      this.loadNext(0, 100).then(values => this.listModel.appendValues(values));
+      this.holder.notify();
     });
-  }
-
-  excludeValue(value: string) {
-    if (!this.excludeSel.has(value)) {
-      this.excludeSel.add(value);
-    } else {
-      this.excludeSel.delete(value);
-    }
-
-    this.updateCondition();
-    this.owner.holder.delayedNotify();
-  }
-
-  getRender(): DropDownListModel<RowData> {
-    return this.render;
-  }
-
-  getColumnsToRender() {
-    return this.colsToRender;
-  }
-
-  getTotalRows() {
-    return this.rowsNum;
-  }
-
-  getSourceTotalRows() {
-    return this.owner.get().getTotalRowsNum();
-  }
+  };
 }
