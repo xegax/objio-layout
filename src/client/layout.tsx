@@ -111,6 +111,7 @@ export class DocLayout extends DocLayoutBase {
   updateLayoutMap() {
     const map: {[id: string]: JSX.Element} = {};
     this.holders.getArray().forEach((holder: ObjectHolderBase) => {
+      holder.setOwner(this);
       holder.holder.unsubscribe(this.notifyView);
       holder.holder.subscribe(this.notifyView);
 
@@ -122,7 +123,7 @@ export class DocLayout extends DocLayoutBase {
       });
 
       map[id] = (
-        <ObjHolderView layoutId={id} model={holder} docLayout={this}>
+        <ObjHolderView key={id} layoutId={id} model={holder} docLayout={this}>
           {jsx}
         </ObjHolderView>
       );

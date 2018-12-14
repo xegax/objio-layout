@@ -39,13 +39,14 @@ export class CategoryFilterView extends React.Component<Props> {
       return <div>in progress: {table.getProgress()}</div>;
     }
 
+    const value = model.getSelect() as string;
     return (
       <div style={{display: 'flex', alignItems: 'center', padding: 5}}>
         <i
           className='fa fa-undo'
           style={{flexGrow: 0, cursor: 'pointer', marginLeft: 5, marginRight: 5}}
           onClick={() => {
-            // model.resetSelect();
+            model.setSelect(null);
           }}
         />
         <DropDownLoadable
@@ -55,6 +56,10 @@ export class CategoryFilterView extends React.Component<Props> {
           model={model.getListModel()}
           totalValues={() => model.getRowsNum()}
           onLoadNext={this.onLoadNext}
+          onSelect={value => {
+            model.setSelect(value.value);
+          }}
+          value={value ? { value } : { value: '-- nothing --' }}
         />
       </div>
     );

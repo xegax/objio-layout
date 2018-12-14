@@ -1,10 +1,10 @@
-import { ObjectHolderBase } from './layout';
+import { ConditionHolder } from './layout';
 import { SERIALIZER } from 'objio';
 import { ObjectBase } from 'objio-object/view/config';
-import { SortPair } from 'objio-object/client/table';
+import { SortPair, Condition } from 'objio-object/client/table';
 
 // base to client and server object
-export class DrillDownTableBase<T extends ObjectBase> extends ObjectHolderBase<T> {
+export class DrillDownTableBase<T extends ObjectBase> extends ConditionHolder<T> {
   protected colsToShow = Array<string>();
   protected idColumn: string;
   protected searchColumn: string;
@@ -87,9 +87,12 @@ export class DrillDownTableBase<T extends ObjectBase> extends ObjectHolderBase<T
     this.holder.save();
   }
 
+  onUpdateCondition(cond: Condition) {
+  }
+
   static TYPE_ID = 'DrillDownTable2';
   static SERIALIZE: SERIALIZER = () => ({
-    ...ObjectHolderBase.SERIALIZE(),
+    ...ConditionHolder.SERIALIZE(),
     idColumn:     { type: 'string' },
     colsToShow:   { type: 'json' },
     searchColumn: { type: 'string' },

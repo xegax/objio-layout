@@ -2,9 +2,8 @@ import * as React from 'react';
 import { DocLayout, ObjectHolderBase } from '../client/layout';
 import { Header } from 'ts-react-ui/layout';
 import { className as cn } from 'ts-react-ui/common/common';
-
-import './layout-cont-view.scss';
 import { LayoutModel } from 'ts-react-ui/model/layout';
+import './_obj-holder-view.scss';
 
 const classes = {
   cont: 'layout-cont',
@@ -79,8 +78,8 @@ export class ObjHolderView extends React.Component<Props> {
   render() {
     const select = this.props.docLayout.getSelect() == this.props.model;
     return (
-      <div className={cn(classes.cont, select && 'select')} onClick={this.setSelect}>
-        <div className={classes.header}>
+      <div className={cn(classes.cont, select && 'select')}>
+        <div className={classes.header} onClick={this.setSelect}>
           <Header
             key={this.props.layoutId}
             data={{id: this.props.layoutId}}

@@ -3,10 +3,12 @@ import { RangeFilterBase } from '../base/range-filter';
 import { DocTable } from 'objio-object/client/doc-table';
 import { PropsGroup, PropItem, DropDownPropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
+import { Condition } from '../base/layout';
 
 export class RangeFilter extends RangeFilterBase<DocTable> {
   private minMaxRange: { min: number; max: number };
   private range: { min: number; max: number };
+  private cond: Condition;
 
   constructor(args) {
     super(args);
@@ -69,6 +71,11 @@ export class RangeFilter extends RangeFilterBase<DocTable> {
     return true;
   }
 
+  onUpdateCondition(cond: Condition) {
+    this.cond = cond;
+    this.updateData();
+  }
+
   getProps() {
     return (
       <PropsGroup label='table' key={this.holder.getID()}>
@@ -119,11 +126,18 @@ export class RangeFilter extends RangeFilterBase<DocTable> {
     if (!this.column)
       return;
 
-    this.obj.getTableRef().getNumStats({ column: this.column })
-    .then(res => {
-      this.minMaxRange = { ...res };
-      this.range = { ...res };
-      this.holder.delayedNotify();
+    const task = this.obj.getTableRef().createSubtable({
+      filter: this.cond
+    }).then(res => {
+      return (
+        this.obj.getTableRef().getNumStats({ column: this.column, table: res.subtable })
+        .then(res => {
+          this.minMaxRange = { ...res };
+          this.range = { ...res };
+          this.holder.delayedNotify();
+        })
+      );
     });
+    this.watchTask(task);
   }
 }

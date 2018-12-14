@@ -6,7 +6,8 @@ import { Cancelable, ExtPromise } from 'objio';
 import {
   LoadCellsArgs,
   ColumnAttr,
-  SubtableAttrs
+  SubtableAttrs,
+  Condition
 } from 'objio-object/client/table';
 import { DocTable } from 'objio-object/client/doc-table';
 import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
@@ -20,6 +21,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
   private colsFromServer = Array<ColumnAttr>();
+  private cond: Condition;
 
   constructor(args) {
     super(args);
@@ -133,6 +135,12 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     this.updateTable();
   }
 
+  onUpdateCondition(cond: Condition) {
+    console.log(cond);
+    this.cond = cond;
+    this.updateTableDataImpl();
+  }
+
   setColumnToShow(col: string, show: boolean) {
     super.setColumnToShow(col, show);
     this.onObjChange();
@@ -191,6 +199,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     args.cols = this.getColsToRequest();
     if (this.sort)
       args.sort = [ this.sort ];
+    args.filter = this.cond;
 
     const task = this.obj.getTableRef().createSubtable(args)
     .then(res => {

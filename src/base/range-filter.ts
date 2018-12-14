@@ -1,8 +1,8 @@
 import { SERIALIZER } from 'objio';
-import { ObjectHolderBase } from './layout';
+import { ObjectHolderBase, ConditionHolder, Condition } from './layout';
 import { ObjectBase } from 'objio-object/view/config';
 
-export class RangeFilterBase<T extends ObjectBase> extends ObjectHolderBase<T> {
+export class RangeFilterBase<T extends ObjectBase> extends ConditionHolder<T> {
   protected column: string;
 
   setColumn(column: string): boolean {
@@ -13,6 +13,9 @@ export class RangeFilterBase<T extends ObjectBase> extends ObjectHolderBase<T> {
     this.holder.delayedNotify();
     this.holder.save();
     return true;
+  }
+
+  onUpdateCondition(cond: Condition) {
   }
 
   static TYPE_ID = 'RangeFilter2';
