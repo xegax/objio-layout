@@ -50,7 +50,6 @@ export class CategoryFilterView extends React.Component<Props> {
           }}
         />
         <DropDownLoadable
-          key={model.getDataKey()}
           disabled={!model.getColumn()}
           style={{flexGrow: 1}}
           model={model.getListModel()}
@@ -58,6 +57,9 @@ export class CategoryFilterView extends React.Component<Props> {
           onLoadNext={this.onLoadNext}
           onSelect={value => {
             model.setSelect(value.value);
+          }}
+          onFilter={filter => {
+            return model.filter(filter);
           }}
           value={value ? { value } : { value: '-- nothing --' }}
         />

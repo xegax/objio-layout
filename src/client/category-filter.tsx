@@ -13,16 +13,16 @@ const sortTypeArr = [
 
 const sortDirArr = [
   { value: 'natural', render: 'Natural' },
-  { value: 'asc', render: 'Ascending' },
-  { value: 'desc', render: 'Descending' }
+  { value: 'asc',     render: 'Ascending' },
+  { value: 'desc',    render: 'Descending' }
 ];
 
 export class CategoryFilter extends CategoryFilterBase<DocTable> {
   protected subtable: string;
   protected rowsNum: number = 0;
   protected listModel = new ListViewLoadableModel();
-  private dataKey: number = 0;
   private cond: Condition;
+  private select: string;
 
   constructor(args) {
     super(args);
@@ -96,7 +96,7 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
             return {
               value: row[0],
               render: (
-                <div title={row[1]}>
+                <div title={`${row[0]} (${row[1]})`}>
                   {row[0] == null || row[0].trim() == '' ? <span style={{ visibility: 'hidden' }}>?</span> : row[0]}
                 </div>
               )
@@ -227,11 +227,11 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
     );
   }
 
-  getDataKey() {
-    return this.dataKey;
+  filter(filter: string): Promise<Array<{ value: string }>> {
+    this.updateTable(filter);
+    return Promise.resolve(this.listModel.getValues());
   }
 
-  private select: string;
   setSelect(value: string) {
     this.select = value;
 
@@ -265,25 +265,33 @@ export class CategoryFilter extends CategoryFilterBase<DocTable> {
     this.updateTable();
   }
 
-  private updateTable = () => {
+  private updateTable = (filterStr?: string) => {
     if (!this.column)
       return;
 
     const column = this.sortType == 'value' ? this.column : 'count';
     const dir = this.sortDir == 'asc' ? 'asc' : 'desc';
+    let filter: Condition = this.cond;
+    if (filterStr) {
+      const filterCond = { column: this.column, like: true, value: filterStr };
+      filter = this.cond ? { op: 'and', values: [ this.cond, filterCond ] } : filterCond;
+    }
+
     const args: Partial<SubtableAttrs> = {
       distinct: { column: this.column },
       sort: this.sortDir == 'natural' ? null : [{ column, dir }],
-      filter: this.cond
+      filter
     };
 
     const task = this.obj.getTableRef().createSubtable(args)
       .then(res => {
-        this.dataKey++;
         this.rowsNum = res.rowsNum;
         this.subtable = res.subtable;
         this.listModel.setValues([]);
-        this.watchTask(this.loadNext(0, 100).then(values => this.listModel.appendValues(values)));
+        const values = this.loadNext(0, 100).then(values => {
+          this.listModel.appendValues(values);
+        });
+        this.watchTask(values);
         this.holder.notify();
       });
     this.watchTask(task);
