@@ -1,7 +1,7 @@
 import { ConditionHolder } from './layout';
 import { SERIALIZER } from 'objio';
 import { ObjectBase } from 'objio-object/view/config';
-import { SortPair, Condition } from 'objio-object/client/table';
+import { SortPair, Condition } from 'objio-object/base/table';
 
 // base to client and server object
 export class DrillDownTableBase<T extends ObjectBase> extends ConditionHolder<T> {

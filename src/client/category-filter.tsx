@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { CategoryFilterBase, SortType, SortDir } from '../base/category-filter';
 import { DocTable } from 'objio-object/client/doc-table';
-import { ColumnAttr, LoadCellsArgs, Condition, SubtableAttrs, ValueCond, CompoundCond } from 'objio-object/client/table';
+import { LoadCellsArgs, Condition, SubtableAttrs, CompoundCond } from 'objio-object/base/table';
 import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
 import { ListViewLoadableModel } from 'ts-react-ui/list-view-loadable';

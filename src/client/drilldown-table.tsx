@@ -8,7 +8,7 @@ import {
   ColumnAttr,
   SubtableAttrs,
   Condition
-} from 'objio-object/client/table';
+} from 'objio-object/base/table';
 import { DocTable } from 'objio-object/client/doc-table';
 import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
