@@ -5,9 +5,10 @@
   "main": "index.js",
   "repository": "git@github.com:xegax/objio-layout.git",
   "scripts": {
-    "prepare": "npm run clean && tsc -p tsconfig.publish.json -outDir . && npm run copy",
+    "prepare": "npm run clean && tsc -p tsconfig.publish.json -outDir . && npm run copyScss && npm run copyImages",
     "postpublish": "npm run clean",
-    "copy": "shx cp src/view/**/*.scss view", 
+    "copyScss": "shx cp src/view/**/*.scss view",
+    "copyImages": "shx rm -rf images && shx cp -R ./src/images ./images", 
     "dist": "tsc",
     "dev": "npm run prepare",
     "clean": "npm run clean-src && npm run clean-dirs",

@@ -13,6 +13,8 @@ import { CategoryFilterView, CategoryFilter } from './category-filter';
 import { RangeFilter, RangeFilterView } from './range-filter';
 import { ViewFactory } from 'objio-object/common/view-factory';
 import { Icon } from 'ts-react-ui/icon';
+import 'ts-react-ui/typings';
+import * as LayoutIcon from '../images/layout.png';
 
 export function initDocLayout(mvf: ViewFactory) {
   const lvf = DocLayout.getViewFactory();
@@ -59,7 +61,7 @@ export function initDocLayout(mvf: ViewFactory) {
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: DocLayout,
-    icons: { item: <Icon src='layout.png'/> },
+    icons: { item: <Icon src={LayoutIcon}/> },
     views: [{
       view: (props: { model: DocLayout }) => <DocLayoutView {...props}/>
     }],

@@ -9,4 +9,5 @@ src/**/*.d.ts
 ./client
 ./view
 ./base
+/images
 package-lock.json
