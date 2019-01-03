@@ -63,7 +63,7 @@ export class ObjectHolderBase<T extends ObjectBase = ObjectBase> extends OBJIOIt
       this.tasks.push(task);
   }
 
-  private removeTask<T>(task: Promise<T>) {
+  removeTask<T>(task: Promise<T>) {
     this.tasks.splice(this.tasks.indexOf(task), 1);
     this.holder.delayedNotify();
   }

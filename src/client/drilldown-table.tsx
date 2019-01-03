@@ -2,7 +2,6 @@ import * as React from 'react';
 import { DrillDownTableBase } from '../base/drilldown-table';
 import { RenderListModel } from 'ts-react-ui/list';
 import { RenderArgs, ListColumn } from 'ts-react-ui/model/list';
-import { Cancelable, ExtPromise } from 'objio';
 import {
   LoadCellsArgs,
   ColumnAttr,
@@ -16,7 +15,7 @@ import { ListView } from 'ts-react-ui/list-view';
 
 export class DrillDownTable extends DrillDownTableBase<DocTable> {
   private tableRender = new RenderListModel(0, 20);
-  private lastLoadTimer: Cancelable;
+  private lastLoadTimer: Promise<any>;
   private maxTimeBetweenRequests: number = 300;
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
@@ -152,7 +151,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
       this.lastLoadTimer = null;
     }
 
-    this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
+    this.lastLoadTimer = Promise.delay(this.maxTimeBetweenRequests);
     return this.lastLoadTimer.then(() => {
       this.lastLoadTimer = null;
 
@@ -194,6 +193,7 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     this.updateTableDataImpl();
   }
 
+  private updateTask: Promise<any>;
   private updateTableDataImpl = () => {
     const args: Partial<SubtableAttrs> = {};
     args.cols = this.getColsToRequest();
@@ -201,15 +201,22 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
       args.sort = [ this.sort ];
     args.filter = this.cond;
 
-    const task = this.obj.getTableRef().createSubtable(args)
-    .then(res => {
+    if (this.updateTask) {
+      this.updateTask.cancel();
+      this.removeTask(this.updateTask);
+      this.updateTask = null;
+    }
+
+    this.updateTask = this.obj.getTableRef().createSubtable(args);
+    this.updateTask.then(res => {
       this.colsFromServer = res.columns.slice();
       this.subtable = res.subtable;
 
       this.updateTableRender(res.rowsNum, this.getColsToShow());
       this.holder.notify();
     });
-    this.watchTask(task);
+
+    this.watchTask(this.updateTask);
   };
 
   private updateTableRender(rowsNum: number, cols: Array<ColumnAttr>) {
