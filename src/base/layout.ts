@@ -1,7 +1,7 @@
 import { LayoutCont } from 'ts-react-ui/model/layout';
 import { OBJIOArray, SERIALIZER, OBJIOItem } from 'objio';
 import { ObjectBase } from 'objio-object/base/object-base';
-import { Condition } from 'objio-object/base/table';
+import { Condition } from 'objio-object/base/database/table';
 export { Condition };
 
 export interface ObjectHolderBaseArgs {

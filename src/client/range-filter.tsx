@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { RangeFilterBase } from '../base/range-filter';
-import { DocTable } from 'objio-object/client/doc-table';
+import { DocTable } from 'objio-object/client/database/doc-table';
 import { PropsGroup, PropItem, DropDownPropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
 import { Condition } from '../base/layout';

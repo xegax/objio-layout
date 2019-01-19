@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { OBJIOItemClassViewable, registerViews } from 'objio-object/view/config';
-import { DocTable } from 'objio-object/client/doc-table';
+import { DocTable } from 'objio-object/client/database/doc-table';
 import { FileObject } from 'objio-object/client/file-object';
 import { DrillDownTable, DrillDownTableView } from './drilldown-table';
 import {
@@ -26,7 +26,7 @@ export function initDocLayout(mvf: ViewFactory) {
       return mvf.getView({
         classObj: FileObject,
         props: { model: props.model.getObject() }
-      })
+      });
     }
   });
 

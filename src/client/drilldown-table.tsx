@@ -7,8 +7,8 @@ import {
   ColumnAttr,
   SubtableAttrs,
   Condition
-} from 'objio-object/base/table';
-import { DocTable } from 'objio-object/client/doc-table';
+} from 'objio-object/base/database/table';
+import { DocTable } from 'objio-object/client/database/doc-table';
 import { PropsGroup, PropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
 import { ListView } from 'ts-react-ui/list-view';
@@ -16,7 +16,7 @@ import { ListView } from 'ts-react-ui/list-view';
 export class DrillDownTable extends DrillDownTableBase<DocTable> {
   private tableRender = new RenderListModel(0, 20);
   private lastLoadTimer: Promise<any>;
-  private maxTimeBetweenRequests: number = 300;
+  private maxTimeBetweenRequests: number = 500;
   private subtable: string;
   private colsToRender = Array<ColumnAttr>();
   private colsFromServer = Array<ColumnAttr>();
@@ -40,21 +40,6 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     return this.tableRender;
   }
 
-  setSortColumn(column: string) {
-    const dir = this.sort ? this.sort.dir : 'asc';
-    super.setSort({ column, dir });
-    this.onObjChange();
-  }
-
-  setSortDir(dir: string) {
-    if (!this.sort)
-      return;
-
-    const column = this.sort.column;
-    super.setSort({ column, dir: dir as any });
-    this.onObjChange();
-  }
-
   getColumnItem = (col: ColumnAttr) => {
     return {
       value: col.name,
@@ -66,9 +51,9 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
               className={this.isColumnShown(col.name) ? 'fa fa-check-square-o' : 'fa fa-square-o'}
               onClick={e => {
                 if (e.ctrlKey)
-                  this.setShowOneColumn(col.name);
+                  this.setShowOneColumn({ column: col.name, save: false });
                 else
-                  this.toggleColumn(col.name);
+                  this.toggleColumn({ column: col.name, save: false });
               }}
             />
             {col.name}
@@ -100,7 +85,13 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
                   value: col.name
                 };
               })}
-              onSelect={value => this.setSortColumn( value.value )}
+              onSelect={value => {
+                this.setSort({
+                  column: value.value,
+                  dir: this.sort.dir,
+                  save: false
+                });
+              }}
             />
             <DropDownPropItem
               label='sort direction'
@@ -110,8 +101,27 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
                 { value: 'asc', render: 'Ascending' },
                 { value: 'desc', render: 'Descending' }
               ]}
-              onSelect={value => this.setSortDir( value.value )}
+              onSelect={value => {
+                if (!this.sort)
+                  return;
+
+                this.setSort({
+                  column: this.sort.column,
+                  dir: value.value as any,
+                  save: false
+                });
+              }}
             />
+            <PropItem>
+              <button
+                onClick={() => {
+                  this.onObjChange();
+                  this.holder.save();
+                }}
+              >
+                apply
+              </button>
+            </PropItem>
           </Tab>
         </Tabs>
       </PropsGroup>
@@ -140,27 +150,19 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
     this.updateTableDataImpl();
   }
 
-  setColumnToShow(col: string, show: boolean) {
-    super.setColumnToShow(col, show);
-    this.onObjChange();
-  }
-
   private loadItems = (first: number, count: number) => {
-    if (this.lastLoadTimer) {
-      this.lastLoadTimer.cancel();
-      this.lastLoadTimer = null;
-    }
+    this.lastLoadTimer && this.lastLoadTimer.cancel();
 
-    this.lastLoadTimer = Promise.delay(this.maxTimeBetweenRequests);
-    return this.lastLoadTimer.then(() => {
-      this.lastLoadTimer = null;
-
+    this.lastLoadTimer = Promise.delay(this.maxTimeBetweenRequests)
+    .then(() => {
       const args: LoadCellsArgs = { first, count };
       if (this.subtable)
         args.table = this.subtable;
 
       return this.watchTask(this.obj.getTableRef().loadCells(args));
     });
+
+    return this.lastLoadTimer;
   }
 
   private getColsToRequest(): Array<string> | null {
@@ -197,9 +199,12 @@ export class DrillDownTable extends DrillDownTableBase<DocTable> {
   private updateTableDataImpl = () => {
     const args: Partial<SubtableAttrs> = {};
     args.cols = this.getColsToRequest();
-    if (this.sort)
-      args.sort = [ this.sort ];
-    args.filter = this.cond;
+
+    if (this.sort.column)
+      args.sort = [ { column: this.sort.column, dir: this.sort.dir } ];
+
+    if (this.cond)
+      args.filter = this.cond;
 
     if (this.updateTask) {
       this.updateTask.cancel();

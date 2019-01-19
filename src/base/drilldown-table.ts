@@ -1,56 +1,52 @@
 import { ConditionHolder } from './layout';
 import { SERIALIZER } from 'objio';
 import { ObjectBase } from 'objio-object/view/config';
-import { SortPair, Condition } from 'objio-object/base/table';
+import { SortPair, Condition } from 'objio-object/base/database/table';
 
 // base to client and server object
 export class DrillDownTableBase<T extends ObjectBase> extends ConditionHolder<T> {
   protected colsToShow = Array<string>();
   protected idColumn: string;
   protected searchColumn: string;
-  protected sort: SortPair;
+  protected sort: Partial<SortPair> = {};
 
-  setSort(pair: SortPair) {
-    if ((!pair && !this.sort))
+  setSort(args: SortPair & { save: boolean }) {
+    let { save, ...sort } = args;
+    if (sort.column == this.sort.column && sort.dir == this.sort.dir)
       return;
 
-    if (pair && this.sort && pair.column == this.sort.column && pair.dir == this.sort.dir)
-      return;
-
-    if (pair)
-      this.sort = { ...pair };
-    else
-      this.sort = null;
+    this.sort = { ...sort };
     this.holder.delayedNotify();
-    this.holder.save();
+    (save == null || save) && this.holder.save();
   }
 
   getSort() {
     return this.sort;
   }
 
-  setColumnToShow(column: string, show: boolean) {
-    if (this.isColumnShown(column) == show)
+  addColumnToShow(args: { column: string, show: boolean, save?: boolean }) {
+    if (this.isColumnShown(args.column) == args.show)
       return;
 
-    if (show)
-      this.colsToShow.push(column);
+    if (args.show)
+      this.colsToShow.push(args.column);
     else
-      this.colsToShow.splice(this.colsToShow.indexOf(column), 1);
+      this.colsToShow.splice(this.colsToShow.indexOf(args.column), 1);
     this.holder.delayedNotify();
-    this.holder.save();
+    (args.save == null || args.save) && this.holder.save();
   }
 
-  setShowOneColumn(col: string) {
-    if (this.colsToShow.length == 1 && this.colsToShow.indexOf(col) != -1)
+  setShowOneColumn(args: { column: string, save?: boolean }) {
+    if (this.colsToShow.length == 1 && this.colsToShow[0] == args.column)
       return;
 
     this.colsToShow = [];
-    this.setColumnToShow(col, true);
+    this.addColumnToShow({show: true, ...args});
   }
 
-  toggleColumn(column: string) {
-    this.setColumnToShow(column, !this.isColumnShown(column));
+  toggleColumn(args: { column: string, save?: boolean }) {
+    const show = !this.isColumnShown(args.column);
+    this.addColumnToShow({...args, show});
   }
 
   isColumnShown(column: string): boolean {
@@ -65,26 +61,26 @@ export class DrillDownTableBase<T extends ObjectBase> extends ConditionHolder<T>
     return this.idColumn;
   }
 
-  setIdColumn(column: string) {
-    if (column == this.idColumn)
+  setIdColumn(args: { column: string, save?: boolean }) {
+    if (args.column == this.idColumn)
       return;
 
-    this.idColumn = column;
+    this.idColumn = args.column;
     this.holder.delayedNotify();
-    this.holder.save();
+    args.save && this.holder.save();
   }
 
   getSearchColumn() {
     return this.searchColumn;
   }
 
-  setSearchColumn(column: string) {
-    if (this.searchColumn == column)
+  setSearchColumn(args: { column: string, save?: boolean }) {
+    if (this.searchColumn == args.column)
       return;
 
-    this.searchColumn = column;
+    this.searchColumn = args.column;
     this.holder.delayedNotify();
-    this.holder.save();
+    args.save && this.holder.save();
   }
 
   onUpdateCondition(cond: Condition) {

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { LayoutModel, clone, LayoutCont, LayoutItem } from 'ts-react-ui/model/layout';
 import { OBJIOItem } from 'objio';
-import { ObjectBase } from 'objio-object/client/object-base';
+import { ObjectBase } from 'objio-object/base/object-base';
 import { select } from 'ts-react-ui/prompt';
 import { ViewFactory } from 'objio-object/common/view-factory';
 import { ObjHolderView } from '../view/obj-holder-view';
@@ -190,7 +190,7 @@ export class DocLayout extends DocLayoutBase {
         <TextPropItem
           label='name'
           value={this.select.getName()}
-          onChanged={name => {
+          onEnter={name => {
             this.select.setName(name);
           }}
         />
