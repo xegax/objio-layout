@@ -2,6 +2,7 @@ import * as React from 'react';
 import { OBJIOItemClassViewable, registerViews } from 'objio-object/view/config';
 import { DocTable } from 'objio-object/client/database/doc-table';
 import { FileObject } from 'objio-object/client/file-object';
+import { VideoFileObject } from 'objio-object/client/video-file-object';
 import { DrillDownTable, DrillDownTableView } from './drilldown-table';
 import {
   DocLayoutView,
@@ -26,6 +27,18 @@ export function initDocLayout(mvf: ViewFactory) {
       return mvf.getView({
         classObj: FileObject,
         props: { model: props.model.getObject() }
+      });
+    }
+  });
+
+  lvf.register({
+    classObj: VideoFileObject,
+    createObject: (args: ObjectHolderBaseArgs) => new ObjectHolderBase(args),
+    viewType: 'content',
+    view: (props: { model: ObjectHolderBase }) => {
+      return mvf.getView({
+        classObj: VideoFileObject,
+        props: { model: props.model.getObject(), onlyContent: true }
       });
     }
   });
