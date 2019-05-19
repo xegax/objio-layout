@@ -1,22 +1,29 @@
 import * as React from 'react';
 import { OBJIOItemClassViewable, registerViews } from 'objio-object/view/config';
-import { DocTable } from 'objio-object/client/database/doc-table';
 import { Table2 } from 'objio-object/client/database/table2';
 import { FileObject } from 'objio-object/client/file-object';
 import { VideoFileObject } from 'objio-object/client/video-file-object';
-import { DrillDownTable, DrillDownTableView } from './drilldown-table';
 import {
   DocLayoutView,
   DocLayout,
   ObjectHolderBase,
   ObjectHolderBaseArgs
 } from './layout';
-import { CategoryFilterView, CategoryFilter } from './category-filter';
-import { RangeFilter, RangeFilterView } from './range-filter';
 import { ViewFactory } from 'objio-object/common/view-factory';
 import { Icon } from 'ts-react-ui/icon';
 import 'ts-react-ui/typings';
 import * as LayoutIcon from '../images/layout.png';
+import { ObjectToCreate } from 'objio-object/common/interfaces';
+
+export function getObjectsToCreate(): Array<ObjectToCreate> {
+  return [
+    {
+      name: 'layout',
+      desc: 'object to layout views',
+      create: () => new DocLayout()
+    }
+  ];
+}
 
 export function initDocLayout(mvf: ViewFactory) {
   const lvf = DocLayout.getViewFactory();
@@ -54,33 +61,6 @@ export function initDocLayout(mvf: ViewFactory) {
         props: { model: props.model.getObject(), onlyContent: true }
       });
     }
-  });
-
-  lvf.register({
-    classObj: DocTable,
-    createObject: (args: ObjectHolderBaseArgs) => new DrillDownTable(args),
-    viewType: 'drilldown-table',
-    view: (props: { model: DrillDownTable }) => (
-      <DrillDownTableView model={props.model}/>
-    )
-  });
-
-  lvf.register({
-    classObj: DocTable,
-    createObject: (args: ObjectHolderBaseArgs) => new CategoryFilter(args),
-    viewType: 'category-filter',
-    view: (props: { model: CategoryFilter }) => (
-      <CategoryFilterView model={props.model}/>
-    )
-  });
-
-  lvf.register({
-    classObj: DocTable,
-    createObject: (args: ObjectHolderBaseArgs) => new RangeFilter(args),
-    viewType: 'range-filter',
-    view: (props: { model: RangeFilter }) => (
-      <RangeFilterView model={props.model}/>
-    )
   });
 }
 
