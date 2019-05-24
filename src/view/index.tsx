@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { OBJIOItemClassViewable, registerViews } from 'objio-object/view/config';
-import { Table2 } from 'objio-object/client/database/table2';
+import { DatabaseTable } from 'objio-object/client/database/database-table';
 import { FileObject } from 'objio-object/client/file-object';
 import { VideoFileObject } from 'objio-object/client/video-file-object';
 import {
@@ -40,12 +40,12 @@ export function initDocLayout(mvf: ViewFactory) {
   });
 
   lvf.register({
-    classObj: Table2,
+    classObj: DatabaseTable,
     createObject: (args: ObjectHolderBaseArgs) => new ObjectHolderBase(args),
     viewType: 'content',
     view: (props: { model: ObjectHolderBase }) => {
       return mvf.getView({
-        classObj: Table2,
+        classObj: DatabaseTable,
         props: { model: props.model.getObject() }
       });
     }
