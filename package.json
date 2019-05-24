@@ -1,6 +1,6 @@
 {
   "name": "objio-layout",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "",
   "main": "index.js",
   "repository": "git@github.com:xegax/objio-layout.git",
@@ -18,8 +18,8 @@
     "@types/bluebird-global": "^3.5.9"
   },
   "dependencies": {
-    "objio": "^0.0.40",
-    "objio-object": "^0.0.40",
-    "ts-react-ui": "^0.1.40"
+    "objio": "^0.0.41",
+    "objio-object": "^0.0.41",
+    "ts-react-ui": "^0.1.41"
   }
 }
