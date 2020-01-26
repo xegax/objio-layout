@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { OBJIOItemClassViewable, registerViews } from 'objio-object/view/config';
 import { DatabaseTable } from 'objio-object/client/database/database-table';
-import { FileObject } from 'objio-object/client/file-object';
 import { VideoFileObject } from 'objio-object/client/video-file-object';
+import { ObjectBase } from 'objio-object/base/object-base';
 import {
   DocLayoutView,
   DocLayout,
@@ -28,12 +28,12 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
 export function initDocLayout(mvf: ViewFactory) {
   const lvf = DocLayout.getViewFactory();
   lvf.register({
-    classObj: FileObject,
+    classObj: ObjectBase,
     createObject: (args: ObjectHolderBaseArgs) => new ObjectHolderBase(args),
     viewType: 'content',
     view: (props: { model: ObjectHolderBase }) => {
       return mvf.getView({
-        classObj: FileObject,
+        classObj: ObjectBase,
         props: { model: props.model.getObject() }
       });
     }
