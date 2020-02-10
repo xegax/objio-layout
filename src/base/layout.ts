@@ -95,6 +95,10 @@ export class DocLayoutBase extends ObjectBase {
     return this.holders;
   }
 
+  getIcon() {
+    return 'layout-object';
+  }
+
   static TYPE_ID = 'DocLayout2';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),

@@ -14,6 +14,11 @@ import { Icon } from 'ts-react-ui/icon';
 import 'ts-react-ui/typings';
 import * as LayoutIcon from '../images/layout.png';
 import { ObjectToCreate } from 'objio-object/common/interfaces';
+import { IconMap } from 'ts-react-ui/common/icon-map';
+
+IconMap.get().append({
+  'layout-object': () => <Icon src={LayoutIcon} />
+});
 
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
@@ -67,7 +72,6 @@ export function initDocLayout(mvf: ViewFactory) {
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: DocLayout,
-    icons: { item: <Icon src={LayoutIcon}/> },
     views: [{
       view: (props: { model: DocLayout }) => <DocLayoutView {...props}/>
     }],
